@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101014" />
+  <title>Antru Wallet</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root{--bg:#0d0e12;--panel:#17191f;--panel2:#20232b;--line:#2b2e38;--text:#f5f6fa;--muted:#9da3b2;--accent:#a78bfa;--accent2:#7c5ce7;--green:#37d69a;--red:#ff7777}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0%,#292044 0,transparent 34%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+    button,input{font:inherit}button{cursor:pointer;border:0}.app{max-width:1120px;margin:auto;padding:22px 18px 42px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}.brand{display:flex;align-items:center;gap:11px;font-size:20px;font-weight:800;letter-spacing:.2px}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#c4b5fd,#7653df);display:grid;place-items:center;color:#171321;font-size:22px;font-weight:900;box-shadow:0 8px 28px #8b5cf633}
+    .tag{font-size:11px;color:#c8baff;border:1px solid #5b4a89;background:#211b32;padding:7px 10px;border-radius:99px}
+    .layout{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.card{background:linear-gradient(150deg,#1b1d25,#14161b);border:1px solid var(--line);border-radius:23px;padding:22px;box-shadow:0 18px 45px #0003}
+    .balance{background:linear-gradient(120deg,#7553d5,#39276f 75%,#211a39);border:1px solid #a78bfa55;position:relative;overflow:hidden;min-height:190px}.balance:after{content:"§";position:absolute;right:20px;bottom:-48px;font-size:190px;font-weight:900;color:#ffffff12;line-height:1}
+    .eyebrow{font-size:12px;color:#d9d0f9;letter-spacing:1px;text-transform:uppercase}.amount{font-size:42px;font-weight:850;letter-spacing:-1.5px;margin:13px 0 5px}.sub{font-size:13px;color:#d7d0eb}
+    .actions{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:16px}.action{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:16px;padding:17px 14px;text-align:left;transition:.2s}.action:hover{border-color:#9275eb;transform:translateY(-2px)}.action .ico{font-size:23px;display:block;margin-bottom:10px}.action b{display:block;font-size:14px}.action small{display:block;color:var(--muted);margin-top:4px;font-size:11px}
+    h2{font-size:17px;margin:0 0 16px}.muted{color:var(--muted)}.row{display:flex;justify-content:space-between;align-items:center;gap:12px}.transaction{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #ffffff0d}.transaction:last-child{border:0}.tx-title{font-size:13px;font-weight:650}.tx-meta{font-size:11px;color:var(--muted);margin-top:4px}.plus{color:var(--green);font-weight:750}.minus{color:#ff9b9b;font-weight:750}
+    .section{margin-top:18px}.primary{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#171321;padding:12px 17px;border-radius:13px;font-weight:800}.secondary{background:#292c35;color:var(--text);padding:11px 15px;border:1px solid var(--line);border-radius:12px;font-weight:650}
+    .field{width:100%;background:#0e1015;border:1px solid #353946;border-radius:13px;padding:14px;color:var(--text);outline:none;margin:8px 0 14px}.field:focus{border-color:var(--accent)}label{font-size:12px;color:#c4c8d2}
+    .modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:16px;z-index:5}.modal.show{display:flex}.dialog{width:min(460px,100%);background:#191b22;border:1px solid #393c48;border-radius:22px;padding:22px;max-height:90vh;overflow:auto}.dialog h2{font-size:20px;margin-bottom:7px}.close{background:#2a2d36;color:white;border-radius:10px;padding:8px 11px}.qrbox{background:white;padding:15px;border-radius:15px;width:max-content;max-width:100%;margin:17px auto}.qrbox img{display:block;max-width:100%}.notice{font-size:12px;line-height:1.55;color:#b9becb;background:#242630;border:1px solid #363947;padding:12px;border-radius:12px;margin-top:13px}.status{display:inline-block;border-radius:99px;padding:5px 9px;font-size:10px;font-weight:800;background:#332a17;color:#ffd37a}.empty{text-align:center;padding:25px 10px;color:var(--muted);font-size:13px}
+    .admin-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}.request{padding:14px;border:1px solid var(--line);background:#111319;border-radius:15px;margin:10px 0}.request .row{margin-bottom:8px}.request-actions{display:flex;gap:8px;margin-top:12px}.request-actions button{flex:1}
+    .tabs{display:flex;gap:8px;margin:0 0 18px}.tab{background:#20232b;color:#aeb3c0;padding:9px 13px;border-radius:10px;font-size:12px}.tab.active{background:#3b2c65;color:#e5dcff}
+    .footer{text-align:center;color:#747b8a;font-size:11px;margin-top:22px;line-height:1.6}
+    .gate{position:fixed;inset:0;z-index:20;background:radial-gradient(circle at 15% 0%,#292044 0,transparent 34%),var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
+    .gate.hide{display:none}.gate-card{width:min(420px,100%)}.gate-card .logo{margin-bottom:14px}.gate-card h2{font-size:20px}.gate-card .primary{display:block;width:100%;text-align:center}
+    @media(max-width:760px){.layout{grid-template-columns:1fr}.app{padding:16px 13px 32px}.card{padding:18px}.amount{font-size:37px}}
+  </style>
+</head>
+<body>
+
+<!-- Sign-in gate: email link first, then name (new users only) -->
+<div class="gate" id="authGate">
+  <div class="card gate-card">
+    <div class="brand"><div class="logo">§</div><span>ANTRU <span style="color:#b9a4ff">WALLET</span></span></div>
+    <div id="stepEmail" style="margin-top:18px">
+      <h2>Sign in</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Apni email daalein, hum us par ek sign-in link bhejenge.</p>
+      <label for="authEmail">Email</label>
+      <input class="field" id="authEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+      <button class="primary" id="sendLinkBtn">Send sign-in link</button>
+    </div>
+    <div id="stepSent" style="display:none;margin-top:18px">
+      <h2>Check your email</h2>
+      <p class="muted" style="font-size:13px">Link bhej diya gaya hai: <b id="sentTo"></b>. Email kholkar link par click karein, phir yahin wapas aayein.</p>
+      <button class="secondary" id="changeEmailBtn" style="width:100%">Use a different email</button>
+    </div>
+    <div id="stepConfirm" style="display:none;margin-top:18px">
+      <h2>Confirm sign-in</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Link is browser par khula hai. Jis email par link bheja tha wo email daalein, phir confirm karein.</p>
+      <label for="confirmEmail">Email</label>
+      <input class="field" id="confirmEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+      <button class="primary" id="confirmLinkBtn">Confirm & sign in</button>
+    </div>
+    <div id="stepName" style="display:none;margin-top:18px">
+      <h2>Welcome</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Apna naam batayein. Aapko ek unique Antru ID milega.</p>
+      <label for="userName">Your name</label>
+      <input class="field" id="userName" placeholder="e.g. Rahul Sharma" autocomplete="name" />
+      <button class="primary" id="saveNameBtn">Continue</button>
+    </div>
+    <div id="authMsg" class="notice" style="display:none"></div>
+  </div>
+</div>
+
+<div class="app">
+  <header>
+    <div class="brand"><div class="logo">§</div><span>ANTRU <span style="color:#b9a4ff">WALLET</span></span></div>
+    <span class="tag">COIN WALLET</span>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" id="userTab">My Wallet</button>
+    <button class="tab" id="adminTab" style="display:none">Admin Panel</button>
+  </div>
+
+  <main id="userView">
+    <div class="layout">
+      <div>
+        <section class="card balance">
+          <div class="eyebrow">Available balance</div>
+          <div class="amount"><span id="balance">0</span> §</div>
+          <div class="sub" id="antruIdLine">Your Antru ID: —</div>
+          <div class="sub" id="greeting" style="margin-top:6px"></div>
+        </section>
+        <section class="actions">
+          <button class="action" id="btnAdd"><span class="ico">＋</span><b>Add Coins</b><small>Request a recharge</small></button>
+          <button class="action" id="btnScan"><span class="ico">▦</span><b>Send Coins</b><small>Pay another Antru user</small></button>
+          <button class="action" id="btnQR"><span class="ico">▣</span><b>My QR</b><small>Receive Antru Coins</small></button>
+          <button class="action" id="btnHistory"><span class="ico">↺</span><b>History</b><small>View transactions</small></button>
+        </section>
+        <section class="card section">
+          <div class="row"><h2>Recent activity</h2><span class="muted" style="font-size:11px">Latest first</span></div>
+          <div id="transactions"><div class="empty">No transactions yet.</div></div>
+        </section>
+      </div>
+      <aside class="card">
+        <h2>How Antru works</h2>
+        <div class="transaction"><div><div class="tx-title">1. Request coins</div><div class="tx-meta">Enter how many § you need</div></div><span>＋</span></div>
+        <div class="transaction"><div><div class="tx-title">2. Pay using UPI</div><div class="tx-meta">Scan the generated payment QR</div></div><span>▦</span></div>
+        <div class="transaction"><div><div class="tx-title">3. Admin verifies</div><div class="tx-meta">Admin checks the payment received</div></div><span>✓</span></div>
+        <div class="transaction"><div><div class="tx-title">4. Coins credited</div><div class="tx-meta">Balance updates after approval</div></div><span>§</span></div>
+        <div class="notice"><b>Prototype:</b> Data Firebase Firestore mein store hota hai. Production ke liye transfers aur approvals ko Cloud Functions aur security rules se lock karna zaroori hai.</div>
+      </aside>
+    </div>
+  </main>
+
+  <main id="adminView" style="display:none">
+    <section class="card">
+      <div class="admin-head"><div><h2 style="margin:0">Admin Dashboard</h2><div class="muted" style="font-size:12px;margin-top:5px">Recharge requests awaiting verification</div></div><span class="tag">ADMIN</span></div>
+      <div class="notice" style="margin:0 0 15px">Approve karne se pehle payment apne bank/UPI account mein verify karein.</div>
+      <div id="requests"><div class="empty">No pending requests.</div></div>
+      <div class="section" style="border-top:1px solid var(--line);padding-top:18px">
+        <h2>Manual coin credit</h2>
+        <label for="manualUser">Antru ID</label><input class="field" id="manualUser" placeholder="e.g. ANTRU123456" />
+        <label for="manualAmount">Coin amount (§)</label><input class="field" id="manualAmount" type="number" min="1" step="1" placeholder="e.g. 100" />
+        <button class="primary" id="manualBtn">Credit coins</button>
+      </div>
+    </section>
+  </main>
+  <div class="footer">ANTRU WALLET • Prototype<br>Real-money collection and stored-value features require an appropriately compliant payment setup.</div>
+</div>
+
+<div class="modal" id="addModal">
+  <div class="dialog">
+    <div class="row"><h2>Request Antru Coins</h2><button class="close" data-close="addModal">✕</button></div>
+    <p class="muted" style="font-size:13px;margin-top:0">Choose the amount you want to recharge.</p>
+    <label for="coinAmount">Coin amount (§)</label><input class="field" id="coinAmount" type="number" min="1" max="100000" step="1" placeholder="Enter amount, e.g. 100" />
+    <button class="primary" style="width:100%" id="genBtn">Generate dynamic QR</button>
+    <div id="paymentResult" style="display:none;text-align:center">
+      <div class="status">PAYMENT REQUEST CREATED</div>
+      <div class="qrbox"><div id="paymentQR"></div></div>
+      <div style="font-weight:800;font-size:22px" id="payAmount">₹0</div>
+      <div class="muted" style="font-size:12px;margin-top:5px" id="requestId"></div>
+      <a id="upiLink" href="#" class="primary" style="display:inline-block;text-decoration:none;margin-top:14px">Open UPI app</a>
+      <div class="notice" style="text-align:left">Payment ke baad admin verify karke coins credit karega.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="scanModal">
+  <div class="dialog">
+    <div class="row"><h2>Send Coins</h2><button class="close" data-close="scanModal">✕</button></div>
+    <p class="muted" style="font-size:13px">Recipient ka Antru ID daalein. Transfer turant ho jayega.</p>
+    <label for="sendTo">Recipient Antru ID</label><input class="field" id="sendTo" placeholder="e.g. ANTRU123456" />
+    <label for="sendAmount">Amount (§)</label><input class="field" id="sendAmount" type="number" min="1" placeholder="e.g. 50" />
+    <button class="primary" style="width:100%" id="sendBtn">Send coins</button>
+  </div>
+</div>
+
+<div class="modal" id="myQrModal">
+  <div class="dialog" style="text-align:center">
+    <div class="row"><h2>My Antru QR</h2><button class="close" data-close="myQrModal">✕</button></div>
+    <div class="qrbox"><div id="myQR"></div></div>
+    <b id="myAntruId"></b><p class="muted" style="font-size:12px">Aapka unique Antru ID</p>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+  import {
+    getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot,
+    runTransaction, writeBatch, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC2wgnRyUnCG7Xi0Jgd4iKn1fGdMVOyI6Q",
+    authDomain: "antru-2db81.firebaseapp.com",
+    projectId: "antru-2db81",
+    storageBucket: "antru-2db81.firebasestorage.app",
+    messagingSenderId: "734404690592",
+    appId: "1:734404690592:web:cb1eb4850261bbb43abfc5",
+    measurementId: "G-H9Y59MH43T"
+  };
+
+  // DEMO CONFIG ONLY. Replace with a compliant payment-provider integration in production.
+  const CONFIG = { payeeName: "prince1538@axl", upiId: "prince1538@axl", currency: "INR" };
+
+  const app = initializeApp(firebaseConfig);
+  isSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const sendCoinsFn = httpsCallable(getFunctions(app), "transferCoins");
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmt = n => Number(n || 0).toLocaleString("en-IN");
+  const fmtDate = ts => (ts && ts.toDate) ? ts.toDate().toLocaleString() : "Just now";
+  const newestFirst = (a, b) => (b.createdAt?.toMillis?.() ?? Date.now()) - (a.createdAt?.toMillis?.() ?? Date.now());
+
+  let user = null, profile = null, unsubs = [];
+  const EMAIL_KEY = "antru_signin_email";
+  const actionCodeSettings = { url: window.location.origin + window.location.pathname, handleCodeInApp: true };
+
+  // ---------- UI helpers ----------
+  function showStep(step) {
+    $("stepEmail").style.display = step === "email" ? "block" : "none";
+    $("stepSent").style.display = step === "sent" ? "block" : "none";
+    $("stepConfirm").style.display = step === "confirm" ? "block" : "none";
+    $("stepName").style.display = step === "name" ? "block" : "none";
+  }
+  function showMsg(text) { $("authMsg").textContent = text; $("authMsg").style.display = text ? "block" : "none"; }
+  function openModal(id) { $(id).classList.add("show"); }
+  function closeModal(id) { $(id).classList.remove("show"); }
+  function setView(view) {
+    $("userView").style.display = view === "user" ? "block" : "none";
+    $("adminView").style.display = view === "admin" ? "block" : "none";
+    $("userTab").classList.toggle("active", view === "user");
+    $("adminTab").classList.toggle("active", view === "admin");
+  }
+  $("userTab").onclick = () => setView("user");
+  $("adminTab").onclick = () => setView("admin");
+  document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => closeModal(b.dataset.close)));
+
+  // ---------- Sign-in (email link) ----------
+  const AUTH_ERRORS = {
+    "auth/quota-exceeded": "Aaj ke email sign-in ki limit khatam ho gayi hai. Thodi der baad ya kal (reset ke baad) dobara try karein.",
+    "auth/too-many-requests": "Bahut zyada attempts ho gaye. Thodi der baad try karein.",
+    "auth/invalid-email": "Ye email address sahi nahi lag raha. Dobara check karein.",
+    "auth/unauthorized-continue-uri": "Ye domain Firebase Authorized domains mein add nahi hai. Admin se kahein.",
+    "auth/network-request-failed": "Internet connection check karke dobara try karein."
+  };
+  function friendlyError(e) { return AUTH_ERRORS[e.code] || ("Sign-in link nahi bhej paaye: " + (e.message || e.code)); }
+
+  // Cooldown stops repeated clicks, which waste the daily email quota
+  let cooldownTimer = null;
+  function startCooldown(seconds) {
+    const btn = $("sendLinkBtn");
+    let left = seconds;
+    const tick = () => {
+      if (left <= 0) {
+        clearInterval(cooldownTimer);
+        btn.disabled = false;
+        btn.textContent = "Send sign-in link";
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = `Wait ${left}s`;
+      left--;
+    };
+    clearInterval(cooldownTimer);
+    tick();
+    cooldownTimer = setInterval(tick, 1000);
+  }
+  function stopCooldown() {
+    clearInterval(cooldownTimer);
+    $("sendLinkBtn").disabled = false;
+    $("sendLinkBtn").textContent = "Send sign-in link";
+  }
+
+  $("sendLinkBtn").addEventListener("click", async () => {
+    const email = $("authEmail").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMsg("Sahi email address daalein.");
+    startCooldown(60);
+    try {
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      localStorage.setItem(EMAIL_KEY, email);
+      $("sentTo").textContent = email;
+      showStep("sent"); showMsg("");
+    } catch (e) {
+      stopCooldown();
+      showMsg(friendlyError(e));
+    }
+  });
+  $("changeEmailBtn").addEventListener("click", () => { showStep("email"); showMsg(""); });
+
+  // ---------- Finish sign-in when the user opens the email link ----------
+  // The link may open in a different browser (e.g. Gmail's browser), so localStorage may be empty there.
+  // In that case we show a visible "Confirm email" step instead of a browser prompt.
+  const LINK_ERRORS = {
+    "auth/invalid-email": "Ye email is link se match nahi karta. Jis email par link aaya tha wo daalein.",
+    "auth/invalid-action-code": "Ye link pehle use ho chuka hai ya expire ho gaya hai. Naya link bhejein.",
+    "auth/expired-action-code": "Ye link expire ho gaya hai. Naya link bhejein.",
+    "auth/network-request-failed": "Internet check karke dobara try karein."
+  };
+  let linkPending = isSignInWithEmailLink(auth, window.location.href);
+
+  async function completeEmailLink(email) {
+    showMsg("Sign-in ho raha hai...");
+    try {
+      await signInWithEmailLink(auth, email.trim(), window.location.href);
+      localStorage.removeItem(EMAIL_KEY);
+      linkPending = false;
+      window.history.replaceState({}, document.title, window.location.pathname);
+      showMsg("");
+    } catch (e) {
+      linkPending = false;
+      showStep("email");
+      showMsg(LINK_ERRORS[e.code] || ("Sign-in fail hua: " + (e.message || e.code)));
+    }
+  }
+
+  if (linkPending) {
+    const saved = localStorage.getItem(EMAIL_KEY);
+    if (saved) {
+      $("authGate").classList.remove("hide");
+      completeEmailLink(saved);
+    } else {
+      $("authGate").classList.remove("hide");
+      $("confirmEmail").value = "";
+      showStep("confirm");
+    }
+  }
+
+  $("confirmLinkBtn").addEventListener("click", () => {
+    const email = $("confirmEmail").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMsg("Sahi email address daalein.");
+    completeEmailLink(email);
+  });
+
+  // ---------- Profile + unique Antru ID ----------
+  // Random ID; batch fails if it already exists (rules allow create only), so we retry.
+  function randomAntruId() { return "ANTRU" + Math.floor(100000 + Math.random() * 900000); }
+
+  async function createProfile(u, name) {
+    for (let i = 0; i < 8; i++) {
+      const antruId = randomAntruId();
+      const batch = writeBatch(db);
+      batch.set(doc(db, "antruIds", antruId), { uid: u.uid, name });
+      batch.set(doc(db, "users", u.uid), { antruId, name, email: u.email, balance: 0, createdAt: serverTimestamp() });
+      try { await batch.commit(); return; }
+      catch (e) { if (e.code !== "permission-denied") throw e; }
+    }
+    throw new Error("Antru ID generate nahi ho paya. Dobara try karein.");
+  }
+
+  $("saveNameBtn").addEventListener("click", async () => {
+    const name = $("userName").value.trim();
+    if (!name) return showMsg("Naam likhna zaroori hai.");
+    try {
+      $("saveNameBtn").disabled = true;
+      await createProfile(user, name);
+      $("saveNameBtn").disabled = false;
+      enterWallet();
+    } catch (e) { $("saveNameBtn").disabled = false; showMsg(e.message); }
+  });
+
+  // ---------- Gate: email sign-in -> name (new users) -> wallet ----------
+  onAuthStateChanged(auth, async u => {
+    user = u;
+    unsubs.forEach(f => f()); unsubs = [];
+    if (!u) {
+      profile = null;
+      if (linkPending) return; // link confirmation in progress, keep the confirm step visible
+      $("authGate").classList.remove("hide"); showStep("email"); return;
+    }
+    const snap = await getDoc(doc(db, "users", u.uid));
+    if (!snap.exists()) { $("authGate").classList.remove("hide"); showStep("name"); return; }
+    profile = snap.data();
+    enterWallet();
+  });
+
+  async function enterWallet() {
+    unsubs.forEach(f => f()); unsubs = [];
+    $("authGate").classList.add("hide"); showMsg("");
+
+    unsubs.push(onSnapshot(doc(db, "users", user.uid), s => {
+      if (!s.exists()) return;
+      profile = s.data();
+      $("balance").textContent = fmt(profile.balance);
+      $("antruIdLine").textContent = "Your Antru ID: " + profile.antruId;
+      $("greeting").textContent = "Hi, " + profile.name;
+    }));
+
+    unsubs.push(onSnapshot(query(collection(db, "transactions"), where("uid", "==", user.uid)), s => {
+      const list = s.docs.map(d => d.data()).sort(newestFirst).slice(0, 8);
+      $("transactions").innerHTML = list.length ? list.map(t =>
+        `<div class="transaction"><div><div class="tx-title">${esc(t.title)}</div><div class="tx-meta">${esc(fmtDate(t.createdAt))}</div></div><span class="${t.amount >= 0 ? 'plus' : 'minus'}">${t.amount >= 0 ? '+' : ''}${t.amount} §</span></div>`
+      ).join("") : '<div class="empty">No transactions yet.</div>';
+    }));
+
+    // Admin check: admins/{email} doc must exist (created manually in Firebase console)
+    const adminSnap = await getDoc(doc(db, "admins", user.email));
+    if (adminSnap.exists()) {
+      $("adminTab").style.display = "inline-block";
+      unsubs.push(onSnapshot(query(collection(db, "rechargeRequests"), where("status", "==", "Pending")), s => {
+        const list = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(newestFirst);
+        $("requests").innerHTML = list.length ? list.map(r =>
+          `<div class="request"><div class="row"><b>${esc(r.id)}</b><span class="status">PENDING</span></div>
+           <div class="muted" style="font-size:12px">${esc(r.name)} • ${esc(r.antruId)} • ${esc(fmtDate(r.createdAt))}</div>
+           <div style="font-size:23px;font-weight:850;margin:9px 0">${fmt(r.amount)} § <span class="muted" style="font-size:12px;font-weight:500">requested</span></div>
+           <div class="request-actions"><button class="primary" data-act="approve" data-id="${esc(r.id)}">Verify & credit</button><button class="secondary" data-act="reject" data-id="${esc(r.id)}">Reject</button></div></div>`
+        ).join("") : '<div class="empty">No pending requests.</div>';
+      }));
+    }
+  }
+
+  // ---------- Wallet actions ----------
+  $("btnAdd").onclick = () => { $("paymentResult").style.display = "none"; $("coinAmount").value = ""; openModal("addModal"); };
+  $("btnScan").onclick = () => { $("sendTo").value = ""; $("sendAmount").value = ""; openModal("scanModal"); };
+  $("btnHistory").onclick = () => $("transactions").scrollIntoView({ behavior: "smooth" });
+  $("btnQR").onclick = () => {
+    if (!profile) return;
+    $("myQR").innerHTML = "";
+    new QRCode($("myQR"), { text: "ANTRU_USER:" + profile.antruId, width: 220, height: 220, colorDark: "#111111", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+    $("myAntruId").textContent = profile.antruId;
+    openModal("myQrModal");
+  };
+
+  $("genBtn").onclick = async () => {
+    const amount = Number($("coinAmount").value);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 100000) return alert("Please enter a whole number between 1 and 100000.");
+    const id = "ANR" + Date.now().toString().slice(-9);
+    try {
+      await setDoc(doc(db, "rechargeRequests", id), {
+        uid: user.uid, antruId: profile.antruId, name: profile.name, amount, status: "Pending", createdAt: serverTimestamp()
+      });
+    } catch (e) { return alert("Request save nahi ho paayi: " + e.message); }
+    const upi = `upi://pay?pa=${encodeURIComponent(CONFIG.upiId)}&pn=${encodeURIComponent(CONFIG.payeeName)}&am=${amount}&cu=${CONFIG.currency}&tn=${encodeURIComponent("Antru recharge " + id)}`;
+    $("paymentQR").innerHTML = "";
+    new QRCode($("paymentQR"), { text: upi, width: 230, height: 230, colorDark: "#111111", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+    $("payAmount").textContent = "₹" + fmt(amount);
+    $("requestId").textContent = "Request ID: " + id;
+    $("upiLink").href = upi;
+    $("paymentResult").style.display = "block";
+  };
+
+  // Transfer to another user: handled by Cloud Function (balances can't be changed from the browser)
+  $("sendBtn").onclick = async () => {
+    const toAntruId = $("sendTo").value.trim().toUpperCase();
+    const amount = Number($("sendAmount").value);
+    if (!toAntruId || !Number.isInteger(amount) || amount < 1) return alert("Recipient ID aur valid amount daalein.");
+    try {
+      await sendCoinsFn({ toAntruId, amount });
+      alert(`${fmt(amount)} § ${toAntruId} ko bhej diye.`);
+      closeModal("scanModal");
+    } catch (e) { alert(e.message); }
+  };
+
+  // ---------- Admin actions ----------
+  $("requests").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-act]");
+    if (!b) return;
+    const id = b.dataset.id;
+    if (b.dataset.act === "reject") {
+      await setDoc(doc(db, "rechargeRequests", id), { status: "Rejected" }, { merge: true });
+      return;
+    }
+    if (!confirm("Have you independently verified the payment in your bank/UPI account? Only approve after confirmation.")) return;
+    try {
+      let credited = 0;
+      await runTransaction(db, async tx => {
+        const rref = doc(db, "rechargeRequests", id);
+        const r = await tx.get(rref);
+        if (!r.exists() || r.data().status !== "Pending") throw new Error("Ye request pehle hi process ho chuki hai.");
+        const uref = doc(db, "users", r.data().uid);
+        const u = await tx.get(uref);
+        credited = r.data().amount;
+        tx.update(rref, { status: "Approved", approvedBy: user.email, approvedAt: serverTimestamp() });
+        tx.update(uref, { balance: (u.data().balance || 0) + credited });
+        tx.set(doc(collection(db, "transactions")), { uid: r.data().uid, title: "Recharge approved " + id, amount: credited, createdAt: serverTimestamp() });
+      });
+      alert(fmt(credited) + " § credited.");
+    } catch (e) { alert(e.message); }
+  });
+
+  $("manualBtn").onclick = async () => {
+    const antruId = $("manualUser").value.trim().toUpperCase();
+    const amount = Number($("manualAmount").value);
+    if (!antruId || !Number.isInteger(amount) || amount < 1) return alert("Antru ID aur valid amount daalein.");
+    try {
+      const idSnap = await getDoc(doc(db, "antruIds", antruId));
+      if (!idSnap.exists()) return alert("Ye Antru ID exist nahi karta.");
+      const uid = idSnap.data().uid;
+      await runTransaction(db, async tx => {
+        const uref = doc(db, "users", uid);
+        const u = await tx.get(uref);
+        tx.update(uref, { balance: (u.data().balance || 0) + amount });
+        tx.set(doc(collection(db, "transactions")), { uid, title: "Admin credit", amount, createdAt: serverTimestamp() });
+      });
+      alert(fmt(amount) + " § " + antruId + " ko credit ho gaye.");
+      $("manualUser").value = ""; $("manualAmount").value = "";
+    } catch (e) { alert(e.message); }
+  };
+</script>
+</body>
+</html>
