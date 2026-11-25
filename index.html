@@ -56,7 +56,8 @@
     .logo{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;font-size:20px;font-weight:900;color:#120d24;background:linear-gradient(145deg,#ddd6fe,#8b5cf6);box-shadow:0 10px 28px rgba(139,92,246,.45)}
 
     /* ---------- App shell (phone-width column) ---------- */
-    .app{max-width:480px;margin:0 auto;padding:16px 16px 40px;min-height:100vh}
+    .app{width:min(100%,760px);max-width:760px;margin:0 auto;padding:20px clamp(14px,3vw,28px) 48px;min-height:100vh}
+    @media(min-width:900px){.app{width:min(100%,920px);max-width:920px}.card{padding:22px}}
     .topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 14px}
     .menu-btn{width:44px;height:44px;border-radius:14px;background:var(--glass2);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;transition:.2s}
     .menu-btn:hover{background:rgba(255,255,255,.14)}
@@ -80,7 +81,10 @@
     .ads{position:relative;overflow:hidden;padding:0;margin-top:14px;border-radius:20px}
     .ads-track{display:flex;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
     .ads-slide{flex:0 0 100%;min-width:100%}
-    .ads-slide img{width:100%;display:block;max-height:190px;object-fit:cover}
+    .ads-slide img{width:100%;display:block;max-height:230px;aspect-ratio:16/7;object-fit:cover}
+    .ads-slide iframe{width:100%;display:block;aspect-ratio:16/9;min-height:190px;max-height:360px;border:0;background:#000}
+    .ads{touch-action:pan-y;user-select:none}
+    @media(min-width:700px){.ads-slide img{max-height:300px}.ads-slide iframe{min-height:280px}}
     .ads-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px}
     .ads-dots span{width:7px;height:7px;border-radius:50%;background:#ffffff55;cursor:pointer;transition:.3s}
     .ads-tag{position:absolute;top:10px;right:12px;font-size:10px;letter-spacing:.7px;background:rgba(0,0,0,.55);color:#ddd;padding:3px 8px;border-radius:99px;backdrop-filter:blur(4px)}
@@ -291,6 +295,8 @@
     </div>
     <label for="sendTo">Recipient Antru ID</label>
     <input class="field" id="sendTo" placeholder="e.g. ANTRU123456" autocapitalize="characters" />
+    <button class="btn btn-ghost" id="verifyRecipientBtn" type="button" style="margin-top:10px">Verify Antru ID</button>
+    <div id="recipientPreview" class="notice info" style="display:none"></div>
     <label for="sendAmount">Amount (§)</label>
     <input class="field" id="sendAmount" type="number" min="1" step="1" placeholder="e.g. 50" />
     <button class="btn btn-pri" id="sendBtn" style="margin-top:16px">Send coins</button>
@@ -373,9 +379,7 @@
 <div class="modal" id="aboutModal">
   <div class="dialog">
     <div class="dialog-head"><h2>About</h2><button class="x" data-close="aboutModal">✕</button></div>
-    <div class="brand" style="margin-top:12px"><div class="logo">§</div><span>ANTRU <span style="color:#b9a4ff">WALLET</span></span></div>
-    <p class="muted" style="font-size:13px">Antru Wallet se apne doston aur community ke saath coins ka lena-dena aasan hai. Version 1.0</p>
-    <p class="muted" style="font-size:13px">Ye app <b style="color:var(--text)">Prince Jha</b> ne banaya hai.</p>
+    <div id="aboutDynamic"><div class="brand" style="margin-top:12px"><div class="logo">§</div><span>ANTRU <span style="color:#b9a4ff">WALLET</span></span></div><p class="muted" style="font-size:13px">Antru Wallet se apne doston aur community ke saath coins ka lena-dena aasan hai. Version 1.0</p><p class="muted" style="font-size:13px">Ye app <b style="color:var(--text)">Prince Jha</b> ne banaya hai.</p></div>
     <a class="ig-btn" href="https://www.instagram.com/princejha01" target="_blank" rel="noopener noreferrer">
       <span class="ig-ico">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" aria-hidden="true">
@@ -410,9 +414,8 @@
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
     getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot,
-    writeBatch, serverTimestamp, increment
+    writeBatch, serverTimestamp, increment, runTransaction
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC2wgnRyUnCG7Xi0Jgd4iKn1fGdMVOyI6Q",
@@ -431,7 +434,6 @@
   isSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const sendCoinsFn = httpsCallable(getFunctions(app), "transferCoins");
   setPersistence(auth, browserLocalPersistence).catch(() => {});
 
   // ---------- Helpers ----------
@@ -717,68 +719,85 @@
     if (appSettings.payeeName) CONFIG.payeeName = appSettings.payeeName;
     renderBanner();
   }
-  onSnapshot(doc(db, "appConfig", "main"), s => applyConfig(s.exists() ? s.data() : {}), () => {});
+  function renderAbout(c) {
+    const a=c?.about||{}, title=a.title??c?.aboutTitle, subtitle=a.subtitle??c?.aboutSubtitle, body=a.text??c?.aboutText;
+    const image=a.imageUrl??c?.aboutImageUrl, buttonText=a.buttonText??c?.aboutButtonText, buttonUrl=a.buttonUrl??c?.aboutButtonUrl, sections=a.sections??c?.aboutSections??[];
+    const validUrl=v=>/^https?:\/\//i.test(String(v||""));
+    let html=`<div class="brand" style="margin-top:12px"><div class="logo">§</div><span>ANTRU <span style="color:#b9a4ff">WALLET</span></span></div>`;
+    if(image&&validUrl(image))html+=`<img src="${esc(image)}" alt="About Antru" style="width:100%;max-height:190px;object-fit:cover;border-radius:16px;margin-top:14px">`;
+    if(title)html+=`<h3 style="margin:16px 0 5px">${esc(title)}</h3>`;
+    if(subtitle)html+=`<p class="muted" style="font-size:13px">${esc(subtitle)}</p>`;
+    if(body)html+=`<p class="muted" style="font-size:13px;white-space:pre-wrap">${esc(body)}</p>`;
+    if(Array.isArray(sections))sections.forEach(x=>{if(x.title)html+=`<h3 style="margin:15px 0 5px">${esc(x.title)}</h3>`;if(x.text||x.description)html+=`<p class="muted" style="font-size:13px;white-space:pre-wrap">${esc(x.text||x.description)}</p>`;if(x.linkLabel&&validUrl(x.linkUrl))html+=`<a class="btn btn-ghost" style="margin-top:8px;text-decoration:none" href="${esc(x.linkUrl)}" target="_blank" rel="noopener noreferrer">${esc(x.linkLabel)}</a>`;});
+    if(buttonText&&validUrl(buttonUrl))html+=`<a class="btn btn-pri" style="margin-top:12px;text-decoration:none" href="${esc(buttonUrl)}" target="_blank" rel="noopener noreferrer">${esc(buttonText)}</a>`;
+    if(!title&&!subtitle&&!body&&!image&&!sections.length)html+=`<p class="muted" style="font-size:13px">Antru Wallet se apne doston aur community ke saath coins ka lena-dena aasan hai. Version 1.0</p>`;
+    html+=`<p class="muted" style="font-size:12px;margin-top:18px">Made with love ❤️ for you</p>`; $("aboutDynamic").innerHTML=html;
+  }
+  onSnapshot(doc(db, "appConfig", "main"), s => { const c=s.exists()?s.data():{}; applyConfig(c); renderAbout(c); }, () => {});
 
-  // ---------- Ads (managed from the admin app) ----------
-  let adsList = [], adIndex = 0, adTimer = null;
-
+  // ---------- Ads: image + YouTube, manual swipe + automatic slide ----------
+  let adsList = [], adIndex = 0, adTimer = null, adStartX = 0, adDragging = false;
   function isLiveAd(a) {
     const now = Date.now();
-    if (a.active === false || !a.imageUrl) return false;
+    const video = a.adType === "youtube" || a.type === "youtube" || !!a.youtubeVideoId || !!a.embedUrl;
+    if (a.active === false || (!video && !a.imageUrl)) return false;
     if (a.startAt && a.startAt > now) return false;
     if (a.endAt && a.endAt < now) return false;
     return true;
   }
   const safeLink = l => !!l && /^https?:\/\//i.test(l);
-
-  function trackClick(id) { updateDoc(doc(db, "ads", id), { clicks: increment(1) }).catch(() => {}); }
-
-  function showAd(i) {
-    adIndex = i;
-    $("adsTrack").style.transform = `translateX(-${i * 100}%)`;
-    document.querySelectorAll("#adsDots span").forEach((d, n) => { d.style.background = n === i ? "#fff" : "#ffffff55"; });
+  function videoId(a) {
+    if (/^[A-Za-z0-9_-]{11}$/.test(a.youtubeVideoId || "")) return a.youtubeVideoId;
+    const m = String(a.youtubeUrl || a.embedUrl || "").match(/(?:embed\/|youtu\.be\/|v=|shorts\/|live\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : "";
   }
-
+  function trackClick(id) { updateDoc(doc(db, "ads", id), { clicks: increment(1) }).catch(() => {}); }
+  function showAd(i) {
+    if (!adsList.length) return;
+    adIndex = (i + adsList.length) % adsList.length;
+    $("adsTrack").style.transform = `translateX(-${adIndex * 100}%)`;
+    document.querySelectorAll("#adsDots span").forEach((d,n) => { d.style.background = n === adIndex ? "#fff" : "#ffffff55"; });
+    document.querySelectorAll("#adsTrack iframe[data-src]").forEach((frame,n) => {
+      if(n===adIndex){if(!frame.getAttribute("src"))frame.setAttribute("src",frame.dataset.src);}
+      else if(frame.getAttribute("src"))frame.removeAttribute("src");
+    });
+  }
+  function startAdTimer() { clearInterval(adTimer); if (adsList.length > 1) adTimer = setInterval(() => showAd(adIndex + 1), 6000); }
   function renderAds() {
     clearInterval(adTimer);
     if (!adsList.length) { $("adsBox").style.display = "none"; return; }
     $("adsBox").style.display = "block";
     $("adsTrack").innerHTML = adsList.map(a => {
-      const img = `<img src="${esc(a.imageUrl)}" alt="${esc(a.title || "Ad")}">`;
-      return `<div class="ads-slide">${safeLink(a.link)
-        ? `<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" data-ad-id="${esc(a.id)}" style="display:block">${img}</a>`
-        : img}</div>`;
+      const video = a.adType === "youtube" || a.type === "youtube" || !!a.youtubeVideoId || !!a.embedUrl;
+      let media;
+      if (video) {
+        const id = videoId(a);
+        media = id ? `<iframe data-src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&playsinline=1&rel=0&controls=1" title="${esc(a.title || "YouTube ad")}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>` : `<div class="empty">YouTube URL invalid hai.</div>`;
+      } else media = `<img src="${esc(a.imageUrl)}" alt="${esc(a.title || "Ad")}" loading="lazy">`;
+      const content = `<div class="ads-slide">${media}</div>`;
+      return safeLink(a.link) && !video ? `<div class="ads-slide"><a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" data-ad-id="${esc(a.id)}"><img src="${esc(a.imageUrl)}" alt="${esc(a.title || "Ad")}" loading="lazy"></a></div>` : content;
     }).join("");
-    $("adsDots").innerHTML = adsList.length > 1 ? adsList.map((_, i) => `<span data-dot="${i}"></span>`).join("") : "";
+    $("adsDots").innerHTML = adsList.length > 1 ? adsList.map((_,i) => `<span data-dot="${i}"></span>`).join("") : "";
     if (adIndex >= adsList.length) adIndex = 0;
-    showAd(adIndex);
-    if (adsList.length > 1) adTimer = setInterval(() => showAd((adIndex + 1) % adsList.length), 5000);
+    showAd(adIndex); startAdTimer();
   }
-
-  $("adsTrack").addEventListener("click", e => {
-    const a = e.target.closest("a[data-ad-id]"); if (a) trackClick(a.dataset.adId);
-  });
-  $("adsDots").addEventListener("click", e => {
-    const d = e.target.closest("[data-dot]"); if (d) showAd(Number(d.dataset.dot));
-  });
-
+  $("adsTrack").addEventListener("click", e => { const l=e.target.closest("a[data-ad-id]"); if(l) trackClick(l.dataset.adId); });
+  $("adsDots").addEventListener("click", e => { const d=e.target.closest("[data-dot]"); if(d){showAd(Number(d.dataset.dot));startAdTimer();} });
+  $("adsBox").addEventListener("pointerdown", e => { adDragging=true; adStartX=e.clientX; });
+  $("adsBox").addEventListener("pointerup", e => { if(!adDragging)return; adDragging=false; const dx=e.clientX-adStartX; if(Math.abs(dx)>45 && adsList.length>1){showAd(adIndex+(dx<0?1:-1));startAdTimer();} });
+  $("adsBox").addEventListener("pointercancel", () => { adDragging=false; });
   function renderOffers() {
     $("offersList").innerHTML = adsList.length ? adsList.map(a => {
-      const inner = `<img src="${esc(a.imageUrl)}" alt="${esc(a.title || "Offer")}"><div>${esc(a.title || "Offer")}</div>`;
-      return safeLink(a.link)
-        ? `<a class="offer" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" data-ad-id="${esc(a.id)}">${inner}</a>`
-        : `<div class="offer">${inner}</div>`;
+      const video=a.adType === "youtube" || a.type === "youtube" || !!a.youtubeVideoId || !!a.embedUrl, id=videoId(a);
+      const media=video && id ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?playsinline=1&rel=0" title="${esc(a.title||"Offer")}" loading="lazy" allowfullscreen style="width:100%;aspect-ratio:16/9;border:0"></iframe>` : (!video ? `<img src="${esc(a.imageUrl)}" alt="${esc(a.title||"Offer")}">` : "");
+      const inner=`${media}<div>${esc(a.title||"Offer")}</div>`;
+      return safeLink(a.link) && !video ? `<a class="offer" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" data-ad-id="${esc(a.id)}">${inner}</a>` : `<div class="offer">${inner}</div>`;
     }).join("") : '<div class="empty">Abhi koi offer nahi hai.</div>';
   }
-  $("offersList").addEventListener("click", e => {
-    const a = e.target.closest("a[data-ad-id]"); if (a) trackClick(a.dataset.adId);
-  });
-
+  $("offersList").addEventListener("click", e => { const l=e.target.closest("a[data-ad-id]"); if(l) trackClick(l.dataset.adId); });
   onSnapshot(collection(db, "ads"), s => {
-    adsList = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(isLiveAd)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-    renderAds();
-    if ($("offersModal").classList.contains("show")) renderOffers();
+    adsList=s.docs.map(d=>({id:d.id,...d.data()})).filter(isLiveAd).sort((a,b)=>(a.order||0)-(b.order||0));
+    renderAds(); if($("offersModal").classList.contains("show")) renderOffers();
   }, () => {});
 
   // ---------- Recharge ----------
@@ -857,22 +876,56 @@
     if (!m) return toast("Ye Antru QR nahi hai.", "err");
     $("sendTo").value = m[1].toUpperCase();
     toast("ID mil gaya: " + m[1].toUpperCase());
+    verifyRecipient();
   }
 
   $("scanStartBtn").addEventListener("click", startScan);
 
-  $("sendBtn").onclick = async () => {
-    const toAntruId = $("sendTo").value.trim().toUpperCase();
-    const amount = Number($("sendAmount").value);
-    if (!toAntruId || !Number.isInteger(amount) || amount < 1) return toast("Recipient ID aur valid amount daalein.", "err");
-    const sReason = blockReason("send");
-    if (sReason) return toast(sReason, "err");
+  let verifiedRecipient = null;
+  async function verifyRecipient() {
+    const id=$("sendTo").value.trim().toUpperCase();
+    if(!/^ANTRU\d{6}$/.test(id)) { verifiedRecipient=null; $("recipientPreview").style.display="none"; toast("Sahi Antru ID daalein.","err"); return null; }
+    if(id===profile?.antruId){verifiedRecipient=null;toast("Aap khud ko coins nahi bhej sakte.","err");return null;}
+    $("verifyRecipientBtn").disabled=true;
     try {
-      await withTimeout(sendCoinsFn({ toAntruId, amount }));
-      stopScan();
-      closeModal("sendModal");
-      toast(`${fmt(amount)} § ${toAntruId} ko bhej diye.`);
-    } catch (e) { toast(e.message || friendlyError(e), "err"); }
+      const idSnap=await withTimeout(getDoc(doc(db,"antruIds",id)));
+      if(!idSnap.exists()) throw new Error("Ye Antru ID nahi mili.");
+      const idData=idSnap.data(), uSnap=await withTimeout(getDoc(doc(db,"users",idData.uid)));
+      if(!uSnap.exists()) throw new Error("Recipient profile nahi mila.");
+      const u=uSnap.data(); if(u.status==="frozen") throw new Error("Recipient account frozen hai.");
+      verifiedRecipient={uid:idData.uid,antruId:u.antruId||id,name:u.name||idData.name||"Antru User"};
+      $("recipientPreview").innerHTML=`<b>Recipient verified</b><br>${esc(verifiedRecipient.name)}<br><span class="muted">${esc(verifiedRecipient.antruId)}</span>`;
+      $("recipientPreview").style.display="block"; return verifiedRecipient;
+    } catch(e){verifiedRecipient=null;$("recipientPreview").style.display="none";toast(e.message||friendlyError(e),"err");return null;}
+    finally{$("verifyRecipientBtn").disabled=false;}
+  }
+  $("verifyRecipientBtn").addEventListener("click",verifyRecipient);
+  $("sendTo").addEventListener("input",()=>{verifiedRecipient=null;$("recipientPreview").style.display="none";});
+  $("sendBtn").onclick=async()=>{
+    const id=$("sendTo").value.trim().toUpperCase(), amount=Number($("sendAmount").value);
+    if(!Number.isInteger(amount)||amount<1)return toast("Valid amount daalein.","err");
+    const reason=blockReason("send");if(reason)return toast(reason,"err");
+    const recipient=(verifiedRecipient&&verifiedRecipient.antruId===id)?verifiedRecipient:await verifyRecipient();
+    if(!recipient)return;
+    if(!confirm(`${recipient.name} (${recipient.antruId}) ko ${fmt(amount)} § bhejne hain?\n\nCoins abhi aapke balance se minus honge. Admin approval ke baad receiver ko milenge.`))return;
+    const requestId="TR"+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,6).toUpperCase();
+    $("sendBtn").disabled=true;
+    try{
+      await withTimeout(runTransaction(db,async tx=>{
+        const senderRef=doc(db,"users",user.uid), receiverRef=doc(db,"users",recipient.uid), idRef=doc(db,"antruIds",id);
+        const [senderSnap,receiverSnap,idSnap]=await Promise.all([tx.get(senderRef),tx.get(receiverRef),tx.get(idRef)]);
+        if(!senderSnap.exists()||!receiverSnap.exists()||!idSnap.exists()||idSnap.data().uid!==recipient.uid)throw new Error("Recipient details badal gaye. Dobara verify karein.");
+        const sender=senderSnap.data(), receiver=receiverSnap.data();
+        if(sender.status==="frozen"||receiver.status==="frozen")throw new Error("Frozen account transfer nahi kar sakta.");
+        if((sender.balance||0)<amount)throw new Error("Wallet balance kam hai.");
+        tx.update(senderRef,{balance:(sender.balance||0)-amount});
+        const senderTxId=requestId+"_sender";
+        tx.set(doc(db,"transferRequests",requestId),{senderUid:user.uid,senderName:sender.name||profile.name,senderAntruId:sender.antruId||profile.antruId,receiverUid:recipient.uid,receiverName:receiver.name||recipient.name,receiverAntruId:receiver.antruId||id,senderTransactionId:senderTxId,amount,status:"Pending",createdAt:serverTimestamp()});
+        tx.set(doc(db,"transactions",senderTxId),{uid:user.uid,title:`Transfer to ${receiver.name||recipient.name} (${receiver.antruId||id}) — Pending approval`,amount:-amount,transferId:requestId,counterpartyUid:recipient.uid,counterpartyName:receiver.name||recipient.name,counterpartyAntruId:receiver.antruId||id,status:"Pending",createdAt:serverTimestamp()});
+      }));
+      stopScan();closeModal("sendModal");toast(`${fmt(amount)} § ki request admin ko bhej di gayi.`);
+    }catch(e){toast(e.message||friendlyError(e),"err");}
+    finally{$("sendBtn").disabled=false;}
   };
 
   // ---------- My QR & share ----------
