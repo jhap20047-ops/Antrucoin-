@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#07080c" />
+  <title>Antru Wallet</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    :root{--bg:#07080c;--glass:rgba(255,255,255,.05);--glass2:rgba(255,255,255,.09);--line:rgba(255,255,255,.09);--text:#f5f6fa;--muted:#9097a9;--violet:#a78bfa;--violet2:#7c5ce7;--green:#34d399;--red:#fb7185;--shadow:0 24px 60px rgba(0,0,0,.5)}
+    *{box-sizing:border-box}
+    html,body{margin:0}
+    body{min-height:100vh;color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+      background:radial-gradient(900px 520px at 10% -12%,rgba(124,92,231,.26),transparent 60%),radial-gradient(640px 420px at 105% 8%,rgba(103,232,249,.09),transparent 60%),var(--bg)}
+    button,input,select,textarea{font:inherit;color:inherit}
+    button{cursor:pointer;border:0;background:none}
+    button:disabled{opacity:.5;cursor:default}
+    ::selection{background:rgba(167,139,250,.35)}
+    :focus-visible{outline:2px solid rgba(167,139,250,.7);outline-offset:2px}
+    ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:99px}
+    h2{font-size:15px;margin:0;letter-spacing:.2px}
+    .muted{color:var(--muted)}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    label{display:block;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin:14px 0 7px}
+
+    /* ---------- Buttons & fields ---------- */
+    .field{width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:13px 14px;outline:none;transition:.2s}
+    .field:focus{border-color:rgba(167,139,250,.7);box-shadow:0 0 0 4px rgba(167,139,250,.14)}
+    .field::placeholder{color:#5d6475}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:15px;font-weight:800;font-size:14px;transition:transform .2s,box-shadow .2s,background .2s;width:100%}
+    .btn:active:not(:disabled){transform:scale(.985)}
+    .btn-pri{background:linear-gradient(120deg,#c4b5fd,#7c5ce7);color:#120d24;box-shadow:0 12px 28px rgba(124,92,231,.35)}
+    .btn-pri:hover:not(:disabled){box-shadow:0 16px 36px rgba(124,92,231,.45)}
+    .btn-ghost{background:var(--glass2);border:1px solid var(--line);font-weight:700}
+    .btn-bad{background:rgba(251,113,133,.12);color:#fecdd3;border:1px solid rgba(251,113,133,.3);font-weight:700}
+    .link-btn{background:none;color:#c8baff;padding:6px 2px;font-size:13px;font-weight:700}
+    .notice{font-size:12.5px;line-height:1.55;color:#c4cad8;background:rgba(255,255,255,.04);border:1px solid var(--line);padding:12px 14px;border-radius:14px;margin-top:12px}
+    .notice.bad{border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.07);color:#ffd0d8}
+    .notice.info{border-color:rgba(103,232,249,.3);background:rgba(103,232,249,.05)}
+    .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:13px}
+    .x{width:34px;height:34px;border-radius:12px;background:var(--glass2);border:1px solid var(--line);color:var(--muted);font-size:13px;flex:none}
+
+    /* ---------- Login gate ---------- */
+    .gate{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;background:radial-gradient(900px 520px at 10% -12%,rgba(124,92,231,.26),transparent 60%),var(--bg)}
+    .gate.hide{display:none}
+    .gate-card{width:min(420px,100%);padding:30px 26px;border-radius:26px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(18px);animation:pop .35s cubic-bezier(.2,.8,.2,1) both}
+    .auth-tabs{display:flex;gap:8px;margin:18px 0 6px}
+    .auth-tabs .tab{flex:1}
+    .tab{background:rgba(255,255,255,.05);color:#aeb3c0;padding:11px 14px;border-radius:13px;font-size:13px;font-weight:700;border:1px solid transparent;transition:.2s}
+    .tab.active{background:linear-gradient(120deg,rgba(167,139,250,.25),rgba(124,92,231,.12));color:#f0eaff;border-color:rgba(167,139,250,.35)}
+    .account-line{font-size:12px;color:#d6c9ff;background:rgba(124,92,231,.12);border:1px solid rgba(167,139,250,.3);border-radius:12px;padding:10px 12px;margin-top:12px;word-break:break-all}
+
+    /* ---------- Brand ---------- */
+    .brand{display:flex;align-items:center;gap:11px;font-size:18px;font-weight:800;letter-spacing:.4px}
+    .logo{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;font-size:20px;font-weight:900;color:#120d24;background:linear-gradient(145deg,#ddd6fe,#8b5cf6);box-shadow:0 10px 28px rgba(139,92,246,.45)}
+
+    /* ---------- App shell (phone-width column) ---------- */
+    .app{max-width:480px;margin:0 auto;padding:16px 16px 40px;min-height:100vh}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 14px}
+    .menu-btn{width:44px;height:44px;border-radius:14px;background:var(--glass2);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;transition:.2s}
+    .menu-btn:hover{background:rgba(255,255,255,.14)}
+    .menu-btn span{display:block;width:18px;height:2px;border-radius:2px;background:var(--text);transition:.25s}
+    .menu-btn.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .menu-btn.open span:nth-child(2){opacity:0}
+    .menu-btn.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+    .card{background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+    .hero{position:relative;overflow:hidden;background:linear-gradient(125deg,#8b6cf0 0%,#4a2fa0 45%,#1e1640 100%);border:1px solid rgba(167,139,250,.35);box-shadow:0 30px 70px rgba(91,60,190,.35);min-height:186px;padding:22px}
+    .hero::before{content:"";position:absolute;inset:-40% -20%;background:radial-gradient(circle at 80% 20%,rgba(255,255,255,.18),transparent 45%);animation:shine 9s ease-in-out infinite;pointer-events:none}
+    .hero::after{content:"§";position:absolute;right:16px;bottom:-56px;font-size:200px;font-weight:900;color:#ffffff10;line-height:1}
+    .eyebrow{font-size:11px;color:#e6dcff;letter-spacing:1.2px;text-transform:uppercase;opacity:.9}
+    .amount{font-size:46px;font-weight:850;letter-spacing:-1.6px;margin:12px 0 10px;text-shadow:0 6px 30px rgba(0,0,0,.25)}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.14);padding:7px 12px;border-radius:99px;font-size:12px;color:#f0eaff;transition:.2s}
+    .chip:hover{background:rgba(0,0,0,.32)}
+    .chip b{letter-spacing:.4px}
+    .sub{font-size:12.5px;color:#e4dcf8;opacity:.9;margin-top:10px}
+
+    /* ---------- Ads ---------- */
+    .ads{position:relative;overflow:hidden;padding:0;margin-top:14px;border-radius:20px}
+    .ads-track{display:flex;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+    .ads-slide{flex:0 0 100%;min-width:100%}
+    .ads-slide img{width:100%;display:block;max-height:190px;object-fit:cover}
+    .ads-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px}
+    .ads-dots span{width:7px;height:7px;border-radius:50%;background:#ffffff55;cursor:pointer;transition:.3s}
+    .ads-tag{position:absolute;top:10px;right:12px;font-size:10px;letter-spacing:.7px;background:rgba(0,0,0,.55);color:#ddd;padding:3px 8px;border-radius:99px;backdrop-filter:blur(4px)}
+
+    /* ---------- Quick actions ---------- */
+    .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 18px}
+    .qa{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 4px;border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--line);font-size:12px;font-weight:700;transition:transform .25s cubic-bezier(.2,.8,.2,1),border-color .25s,box-shadow .25s}
+    .qa:hover:not(:disabled){transform:translateY(-3px);border-color:rgba(167,139,250,.55);box-shadow:0 14px 30px rgba(124,92,231,.22)}
+    .qa:active:not(:disabled){transform:scale(.97)}
+    .qi{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:19px;background:rgba(167,139,250,.14);color:#e0d4ff}
+
+    /* ---------- Transactions ---------- */
+    .section-head{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 10px}
+    .tx{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .tx:last-child{border:0}
+    .tx-title{font-size:13.5px;font-weight:650}
+    .tx-meta{font-size:11.5px;color:var(--muted);margin-top:3px}
+    .plus{color:var(--green);font-weight:750;white-space:nowrap}
+    .minus{color:#ff9fb0;font-weight:750;white-space:nowrap}
+    .seg{display:inline-flex;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:13px;padding:4px;gap:4px;margin-bottom:12px}
+    .seg button{padding:7px 12px;border-radius:10px;color:var(--muted);font-weight:700;font-size:12.5px}
+    .seg button.on{background:var(--glass2);color:var(--text)}
+
+    /* ---------- Side menu ---------- */
+    .overlay{position:fixed;inset:0;z-index:40;background:rgba(3,4,8,.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}
+    .overlay.show{opacity:1;pointer-events:auto}
+    .drawer{position:fixed;top:0;right:0;bottom:0;z-index:50;width:min(330px,88vw);padding:22px 18px;display:flex;flex-direction:column;background:linear-gradient(170deg,#161924,#0a0c12);border-left:1px solid var(--line);box-shadow:-30px 0 60px rgba(0,0,0,.5);transform:translateX(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+    .drawer.show{transform:translateX(0)}
+    .drawer-head{display:flex;align-items:center;gap:12px;padding:6px 4px 18px;border-bottom:1px solid var(--line);margin-bottom:12px}
+    .avatar{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;font-weight:850;color:#120d24;background:linear-gradient(145deg,#ddd6fe,#8b5cf6);flex:none}
+    .drawer-head b{display:block;font-size:15px}
+    .mi{display:flex;align-items:center;gap:14px;width:100%;padding:13px 12px;border-radius:14px;text-align:left;font-weight:650;color:#e7e9f2;transition:background .2s}
+    .mi:hover{background:var(--glass2)}
+    .mi .mi-ico{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:rgba(167,139,250,.13);font-size:16px;flex:none}
+    .mi.danger{color:#fecdd3;margin-top:auto}
+    .mi.danger .mi-ico{background:rgba(251,113,133,.12)}
+
+    /* ---------- Modals ---------- */
+    .modal{position:fixed;inset:0;z-index:60;background:rgba(3,4,8,.72);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:14px}
+    .modal.show{display:flex;animation:fade .2s ease}
+    .dialog{width:min(470px,100%);max-height:90vh;overflow:auto;border-radius:24px;padding:22px;background:linear-gradient(170deg,#161924,#0c0e15);border:1px solid rgba(255,255,255,.1);box-shadow:var(--shadow);animation:pop .3s cubic-bezier(.2,.8,.2,1)}
+    .dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+    .dialog-head h2{font-size:18px}
+    .dialog p{margin:6px 0 0}
+    .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 4px}
+    .chips button{padding:10px 0;border-radius:12px;background:var(--glass);border:1px solid var(--line);font-weight:750;font-size:13px;transition:.2s}
+    .chips button:hover{border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.1)}
+    .qrbox{background:#fff;padding:16px;border-radius:18px;width:max-content;max-width:100%;margin:18px auto;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+    .qrbox img{display:block;max-width:100%}
+    .status{display:inline-block;border-radius:99px;padding:5px 10px;font-size:10px;font-weight:800;letter-spacing:.6px;background:rgba(251,191,36,.12);color:#fde68a}
+    .scan-box{display:none;margin-top:12px;border-radius:18px;overflow:hidden;border:1px solid var(--line);position:relative;background:#000}
+    .scan-box video{width:100%;display:block;max-height:280px;object-fit:cover}
+    .scan-box canvas{display:none}
+    .scan-frame{position:absolute;inset:18%;border:2px solid rgba(167,139,250,.9);border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+    .ig-btn{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:16px;background:linear-gradient(120deg,rgba(253,29,29,.12),rgba(131,58,180,.12));border:1px solid rgba(225,48,108,.35);margin-top:14px;text-align:left;text-decoration:none;color:var(--text);transition:.2s}
+    .ig-btn:hover{transform:translateY(-1px);border-color:rgba(225,48,108,.6)}
+    .ig-ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(45deg,#f58529,#dd2a7b 50%,#8134af);flex:none;box-shadow:0 8px 20px rgba(221,42,123,.35)}
+    .ig-btn b{display:block;font-size:14px}.ig-btn small{color:var(--muted);font-size:12px}
+    .offer{display:block;border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:12px;background:rgba(0,0,0,.25);text-decoration:none;color:inherit;transition:.2s}
+    .offer:hover{transform:translateY(-2px);border-color:rgba(167,139,250,.45)}
+    .offer img{width:100%;display:block;max-height:180px;object-fit:cover}
+    .offer div{padding:11px 14px;font-weight:700;font-size:13px}
+    .footer{text-align:center;color:#7b8195;font-size:12.5px;margin-top:28px;letter-spacing:.3px}
+    .toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;align-items:center;gap:8px;width:min(92vw,400px)}
+    .toast{width:100%;padding:12px 15px;border-radius:14px;background:rgba(20,23,33,.96);border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px;text-align:center;animation:rise .3s ease both;backdrop-filter:blur(10px)}
+    .toast.err{border-color:rgba(251,113,133,.45);color:#ffd0d8}
+    .toast.ok{border-color:rgba(52,211,153,.4)}
+
+    @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+    @keyframes fade{from{opacity:0}to{opacity:1}}
+    @keyframes shine{0%{transform:translateX(-30%)}50%{transform:translateX(30%)}100%{transform:translateX(-30%)}}
+    @media (max-width:420px){.amount{font-size:40px}.quick{gap:8px}.qa{font-size:11.5px}}
+  
+    /* ===== Splash animation (wallet opens, cash, card flip) ===== */
+    #splash{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow:hidden;
+      background:radial-gradient(circle at 50% 35%,#ffffff 0%,#fdf2f8 100%);transition:opacity .5s ease}
+    #splash.sp-out{opacity:0;pointer-events:none}
+    #splash .sp-scene{position:relative;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1400px;overflow:hidden}
+    .sp-lockup{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+    .sp-icon{position:relative;width:172px;height:172px;border-radius:40px;background:linear-gradient(145deg,#fb7185 0%,#c026d3 52%,#4c1d95 100%);
+      box-shadow:0 24px 48px -12px rgba(244,63,94,.5),0 12px 24px -8px rgba(15,23,42,.25),inset 0 2px 3px rgba(255,255,255,.55),inset 0 -4px 8px rgba(0,0,0,.35);
+      display:flex;align-items:center;justify-content:center;perspective:700px}
+    .sp-icon::before{content:'';position:absolute;inset:10px;border-radius:31px;background:linear-gradient(165deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.03) 45%,rgba(0,0,0,.15) 100%);border:1px solid rgba(255,255,255,.28);pointer-events:none}
+    .sp-assembly{position:relative;width:112px;height:88px;transform-style:preserve-3d}
+    .sp-assembly svg{width:100%;height:100%;overflow:visible;display:block}
+    .sp-back{position:absolute;inset:0;z-index:2}
+    .sp-notes{position:absolute;inset:0;z-index:4;pointer-events:none}
+    .sp-note{position:absolute;top:22px;left:22px;width:76px;height:44px;border-radius:7px;background:linear-gradient(135deg,#34d399 0%,#059669 65%,#065f46 100%);
+      border:1.5px solid rgba(236,253,245,.85);box-shadow:0 6px 14px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:space-between;padding:4px 7px;
+      color:#ecfdf5;font-weight:800;font-size:11px;opacity:0;transform:scale(.85);will-change:transform,opacity}
+    .sp-note::after{content:'';position:absolute;inset:4px;border-radius:4px;border:1px dashed rgba(236,253,245,.45)}
+    .sp-note small{font-size:8px;opacity:.8;font-weight:600}
+    .sp-flap{position:absolute;inset:0;z-index:8;transform-origin:12px 50%;transform-style:preserve-3d;will-change:transform}
+    .sp-flap svg{width:100%;height:100%;overflow:visible;display:block}
+    .sp-title{margin-top:22px;font-size:30px;letter-spacing:-.02em;color:#1e2436;z-index:5}
+    .sp-title b{font-weight:800}.sp-title span{font-weight:400}
+    .sp-card{position:fixed;top:50%;left:50%;width:136px;height:86px;margin-top:-66px;margin-left:-68px;transform-style:preserve-3d;z-index:5;pointer-events:none;opacity:0;will-change:transform,opacity}
+    .sp-card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;border-radius:14px}
+    .sp-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(15,23,42,.45),inset 0 1px 1px rgba(255,255,255,.45)}
+    .sp-front{background:linear-gradient(135deg,#e11d48 0%,#7e22ce 55%,#1e1b4b 100%);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:10px 12px}
+    .sp-front::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.24) 45%,rgba(253,164,175,.3) 50%,transparent 75%);transform:translateX(-120%);pointer-events:none}
+    .sp-card.shimmer .sp-front::after{animation:spGlare .75s ease-out forwards}
+    @keyframes spGlare{0%{transform:translateX(-120%)}100%{transform:translateX(130%)}}
+    .sp-back-face{background:linear-gradient(135deg,#4c1d95 0%,#1e1b4b 100%);transform:rotateY(180deg);display:flex;flex-direction:column;justify-content:space-between;padding:10px 0;color:#cbd5e1}
+    .sp-top{display:flex;align-items:center;justify-content:space-between}
+    .sp-brand{display:flex;align-items:center;gap:6px}
+    .sp-mini{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center}
+    .sp-mini svg{width:14px;height:14px}
+    .sp-name{font-size:8px;font-weight:700;letter-spacing:.3px}
+    .sp-contactless{width:14px;height:14px;opacity:.85}
+    .sp-mid{display:flex;align-items:center;gap:8px;margin:auto 0}
+    .sp-chip{width:16px;height:12px;border-radius:3px;background:linear-gradient(135deg,#fde68a,#fbbf24)}
+    .sp-num{font-size:9px;font-family:monospace;letter-spacing:2px}
+    .sp-bottom{display:flex;align-items:flex-end;justify-content:space-between}
+    .sp-type{font-size:6.5px;text-transform:uppercase;letter-spacing:1.5px;opacity:.8}
+    .sp-dots{display:flex}
+    .sp-dots i{width:10px;height:10px;border-radius:50%;display:block}
+    .sp-dots i+i{margin-left:-4px}
+    .sp-stripe{width:100%;height:16px;background:rgba(2,6,23,.9);margin-top:4px}
+    .sp-sig{display:flex;align-items:center;justify-content:space-between;padding:0 12px}
+    .sp-sig span.bar{height:12px;width:64px;background:rgba(226,232,240,.85);border-radius:2px}
+    .sp-sig span.cvv{font-size:7px;font-family:monospace;color:#94a3b8}
+    .sp-foot{padding:0 12px;font-size:6px;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase}
+    @media (prefers-reduced-motion: reduce){#splash{display:none !important}}
+  
+    /* ===== Home layout (search, scan banner, recommended, bottom bar) ===== */
+    .app{padding-bottom:130px}
+    .top-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+    .top-row .avatar{width:44px;height:44px;border-radius:50%;font-size:15px;flex:none}
+    .search{position:relative;flex:1;min-width:0}
+    .s-ico{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:18px;color:#9097a9;pointer-events:none}
+    .s-input{width:100%;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:13px 16px 13px 42px;background:rgba(20,22,32,.72);color:var(--text);outline:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);user-select:text}
+    .s-input:focus{border-color:rgba(167,139,250,.6)}
+    .s-input::placeholder{color:#7d8498}
+    .search-drop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:30;display:none;max-height:320px;overflow:auto;padding:8px;border-radius:20px;background:#15171f;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .s-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border-radius:14px;text-align:left}
+    .s-item:hover{background:var(--glass2)}
+    .s-item b{display:block;font-size:14px}
+    .s-item small{color:var(--muted);font-size:12px}
+    .greet{font-size:13px;color:#c9cdd9;margin:2px 4px 0}
+    .scan-banner{display:block;position:relative;width:100%;margin-top:12px;border:0;border-radius:30px;padding:26px 24px;min-height:196px;overflow:hidden;text-align:left;color:#fff;background:linear-gradient(160deg,#2b1f55 0%,#120e26 70%);box-shadow:0 26px 60px rgba(60,30,140,.35),inset 0 1px 0 rgba(255,255,255,.12);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+    .scan-banner::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 80%,rgba(167,139,250,.4),transparent 55%);pointer-events:none}
+    .scan-banner:hover:not(:disabled){transform:translateY(-2px)}
+    .scan-banner:disabled{opacity:.55}
+    .sb-text{position:relative;display:flex;flex-direction:column;font-size:46px;font-weight:900;line-height:.95;letter-spacing:-1.2px;text-transform:lowercase}
+    .sb-sub{position:relative;display:block;margin-top:14px;font-size:13px;color:#d6c9ff;max-width:60%}
+    .sb-qr{position:absolute;right:20px;bottom:20px;width:96px;height:96px;padding:10px;border-radius:20px;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+    .sb-qr svg{width:100%;height:100%;display:block}
+    .act-row{display:flex;gap:12px;margin-top:16px;align-items:stretch}
+    .act-2{margin-top:12px}
+    .round-btn{flex:none;width:112px;height:100px;border-radius:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:700;background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid var(--line);transition:transform .2s,border-color .2s}
+    .wide-btn{flex:1;height:100px;border-radius:32px;font-size:17px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid var(--line);transition:transform .2s,border-color .2s}
+    .wide-btn.sm{height:64px;font-size:15px;border-radius:24px}
+    .round-btn:hover,.wide-btn:hover:not(:disabled){transform:translateY(-2px);border-color:rgba(167,139,250,.5)}
+    .sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:26px 4px 10px}
+    .sec-head h2{font-size:18px}
+    .rec-row{display:flex;gap:18px;overflow-x:auto;padding:6px 4px 12px;scrollbar-width:none}
+    .rec-row::-webkit-scrollbar{display:none}
+    .rec{flex:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:92px;background:none;font-size:13px;font-weight:600;color:#e8e9f3}
+    .rec .circle{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:850;color:#150d2b;background:linear-gradient(145deg,#ffffff,#b29cff);box-shadow:0 12px 24px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.5)}
+    .rec .nm{max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bottom-nav{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;z-index:35;display:flex;justify-content:space-around;padding:10px 6px calc(12px + env(safe-area-inset-bottom));background:rgba(8,9,14,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+    .bn{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);padding:4px 6px;min-width:56px}
+    .bn-ico{font-size:18px;line-height:1}
+    .bn.active{color:#c4b5fd}
+    .bn.active .bn-ico{filter:drop-shadow(0 0 8px rgba(167,139,250,.7))}
+  
+    /* ===== Square scan banner, bottom sheet, balance row ===== */
+    .scan-banner{aspect-ratio:1/1;min-height:0;display:flex;flex-direction:column;padding:28px 26px;border-radius:34px}
+    .sb-text{font-size:58px;line-height:.92}
+    .sb-sub{margin-top:auto;max-width:62%;font-size:13px}
+    .sb-qr{right:24px;bottom:24px;width:112px;height:112px}
+    #balanceModal{align-items:flex-end;padding:0}
+    .sheet-bottom{width:100%;max-width:480px;max-height:70vh;border-radius:30px 30px 0 0;padding:22px 20px 34px;animation:sheetUp .3s cubic-bezier(.2,.8,.2,1) both}
+    @keyframes sheetUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+    .bal-row{display:flex;align-items:center;gap:14px;padding:18px 4px 6px}
+    .bal-ico{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:24px;font-weight:900;color:#150d2b;background:linear-gradient(145deg,#ffffff,#b29cff);flex:none}
+    .bal-info{flex:1;min-width:0}
+    .bal-title{font-size:16px;font-weight:600}
+    .bal-add{background:none;color:#fbbf24;font-size:13px;font-weight:700;padding:4px 0;margin-top:4px}
+    .bal-amt{font-size:24px;font-weight:800;white-space:nowrap}
+    /* ===== Scan & pay images, home background, payment success ===== */
+    .home-bg{position:fixed;inset:0;z-index:-1;display:none;background-size:cover;background-position:center;background-repeat:no-repeat;background-color:var(--bg)}
+    .home-bg.on{display:block}
+    .sb-text-img{position:absolute;margin:0;font-size:58px;font-weight:900;line-height:.92;letter-spacing:-1.2px;text-transform:lowercase;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.6);display:flex;flex-direction:column;pointer-events:none;z-index:1}
+    .sb-text-img[hidden]{display:none}
+    .sb-text-img span{display:block}
+    .scan-banner.has-img{padding:0;background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#120e26}
+    .scan-banner.has-img::before,.scan-banner.has-img .sb-sub,.scan-banner.has-img .sb-qr{display:none}
+    .scan-banner.has-img .sb-text{text-shadow:0 4px 18px rgba(0,0,0,.6)}
+    .ads-track-wrap{position:relative}
+    .success-screen{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;overflow-y:auto;background:#eef6ee;color:#14291a}
+    .success-screen.show{display:flex;animation:ssIn .35s ease both}
+    @keyframes ssIn{from{opacity:0}to{opacity:1}}
+    .ss-top{background:#2e7d32;color:#fff;text-align:center;padding:44px 22px 90px}
+    .ss-tick{width:92px;height:92px;margin:0 auto;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    .ss-tick svg{width:46px;height:46px}
+    .ss-title{font-size:21px;font-weight:800;margin-top:20px}
+    .ss-date{font-size:13px;color:#d9f5d6;margin-top:6px}
+    .ss-card{background:#fff;border-radius:22px;margin:-70px 18px 0;padding:20px;box-shadow:0 14px 40px rgba(0,0,0,.14)}
+    .ss-row{display:flex;align-items:center;gap:14px}
+    .ss-avatar{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-weight:800;color:#fff;background:#2e7d32;flex:none;font-size:18px}
+    .ss-name{font-weight:700;font-size:16px;word-break:break-word}
+    .ss-id{font-size:12px;color:#6b7b6e;margin-top:3px;letter-spacing:.4px}
+    .ss-amt{font-size:34px;font-weight:850;margin:18px 0 6px;letter-spacing:-.6px}
+    .ss-actions{display:flex;border-top:1px solid #e3ece4;margin-top:14px;padding-top:6px}
+    .ss-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;color:#2e6b34;padding:12px 10px}
+    .ss-btn+.ss-btn{border-left:1px solid #e3ece4}
+    .ss-ads{position:relative;overflow:hidden;margin:18px 18px 0;border-radius:18px;background:#fff;padding-bottom:4px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+    .ss-ads .ads-dots{position:static;padding:8px 0 4px}
+    .ss-ads .ads-slide img{max-height:200px}
+    .ss-foot{margin-top:auto;padding:18px 18px calc(18px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e3ece4;position:sticky;bottom:0}
+    .ss-done{width:100%;padding:15px;border-radius:14px;background:#fff;font-weight:800;color:#5b21b6;font-size:15px;letter-spacing:.8px}
+  </style>
+</head>
+<body>
+<!-- ============ Splash animation (plays on app open, tap to skip) ============ -->
+<div id="splash" aria-hidden="true">
+  <div class="sp-scene">
+    <div class="sp-lockup">
+      <div class="sp-icon">
+        <div class="sp-assembly">
+          <div class="sp-back">
+            <svg viewBox="0 0 112 88"><rect x="8" y="14" width="88" height="66" rx="14" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.45)" stroke-width="1.6"/></svg>
+          </div>
+          <div class="sp-notes">
+            <div class="sp-note" id="spN1"><span>₹</span><small>500</small></div>
+            <div class="sp-note" id="spN2"><span>₹</span><small>500</small></div>
+            <div class="sp-note" id="spN3"><span>₹</span><small>500</small></div>
+          </div>
+          <div class="sp-flap" id="spFlap">
+            <svg viewBox="0 0 112 88">
+              <defs>
+                <filter id="spGlow" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur stdDeviation="3.2" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <rect x="8" y="18" width="88" height="62" rx="14" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.58)" stroke-width="1.8"/>
+              <rect x="74" y="40" width="26" height="18" rx="9" fill="rgba(255,255,255,0.28)" stroke="rgba(255,255,255,0.68)" stroke-width="1.5"/>
+              <circle cx="83" cy="49" r="3" fill="#ffffff"/>
+              <path d="M31 68 L49 27 C51 23 55 23 57 27 L75 68" fill="none" stroke="#ffffff" stroke-width="7.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#spGlow)"/>
+              <path d="M39 55 L58 55" fill="none" stroke="#fda4af" stroke-width="6.2" stroke-linecap="round" filter="url(#spGlow)"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="sp-title"><b>Antru</b> <span>Wallet</span></div>
+    </div>
+
+    <div class="sp-card" id="spCard">
+      <div class="sp-card-inner" id="spCardInner">
+        <div class="sp-face sp-front">
+          <div class="sp-top">
+            <div class="sp-brand">
+              <div class="sp-mini">
+                <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.8"/><path d="M8 16 L12 8 L16 16" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 13.5 L14.5 13.5" fill="none" stroke="#fda4af" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </div>
+              <span class="sp-name">Antru Wallet</span>
+            </div>
+            <svg class="sp-contactless" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 16.5a5 5 0 0 1 0-9"/><path d="M12 19a9 9 0 0 1 0-14"/><path d="M15.5 21.5a13 13 0 0 1 0-19"/></svg>
+          </div>
+          <div class="sp-mid"><div class="sp-chip"></div><div class="sp-num">•••• 4829</div></div>
+          <div class="sp-bottom">
+            <span class="sp-type">Antru Black</span>
+            <div class="sp-dots"><i style="background:rgba(253,164,175,.9)"></i><i style="background:rgba(252,211,77,.9)"></i></div>
+          </div>
+        </div>
+        <div class="sp-face sp-back-face">
+          <div class="sp-stripe"></div>
+          <div class="sp-sig"><span class="bar"></span><span class="cvv">CVV •••</span></div>
+          <div class="sp-foot">Antru Wallet Network</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+    const flap = document.getElementById('spFlap');
+    const notes = [document.getElementById('spN1'), document.getElementById('spN2'), document.getElementById('spN3')];
+    const card = document.getElementById('spCard');
+    const inner = document.getElementById('spCardInner');
+    const TOTAL = 1650 / 0.5; // same timing as the original animation (about 3.3 s)
+    let raf = null, finished = false;
+
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    const easeInOutQuart = t => (t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2);
+
+    function finish() {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(raf);
+      splash.classList.add('sp-out');
+      setTimeout(() => { splash.style.display = 'none'; }, 600);
+    }
+    splash.addEventListener('click', finish);
+
+    function play() {
+      const start = performance.now();
+      const maxScale = Math.max(window.innerWidth / 136 * 1.18, window.innerHeight / 86 * 1.18, 8);
+      let glare = false;
+
+      function frame(now) {
+        if (finished) return;
+        const p = Math.min((now - start) / TOTAL, 1);
+
+        // Wallet opens from the right
+        flap.style.transform = p <= 0.18 ? `rotateY(${-easeOutCubic(p / 0.18) * 42}deg)` : 'rotateY(-42deg)';
+
+        // Cash notes fan out and stay
+        if (p >= 0.12) {
+          const t = easeOutCubic(Math.min((p - 0.12) / 0.22, 1));
+          notes.forEach(n => { n.style.opacity = String(t); });
+          notes[0].style.transform = `translate3d(${t * 26}px, ${-t * 20}px, 0) rotate(${-t * 14}deg) scale(${0.85 + t * 0.12})`;
+          notes[1].style.transform = `translate3d(${t * 36}px, ${-t * 10}px, 0) rotate(${-t * 2}deg) scale(${0.85 + t * 0.14})`;
+          notes[2].style.transform = `translate3d(${t * 42}px, ${t * 2}px, 0) rotate(${t * 11}deg) scale(${0.85 + t * 0.15})`;
+        }
+
+        // Card emerges from the wallet
+        if (p >= 0.18 && p < 0.38) {
+          const t = easeOutCubic((p - 0.18) / 0.20);
+          card.style.opacity = '1';
+          card.style.zIndex = t > 0.45 ? '20' : '5';
+          card.style.transform = `translate3d(${t * 52}px, ${-t * 118}px, 0) scale(${0.7 + t * 0.5})`;
+          inner.style.transform = `rotateY(${t * 25}deg) rotateX(${t * 10}deg) rotateZ(${-t * 6}deg)`;
+        } else if (p >= 0.38 && p < 0.65) {
+          // Card flips and comes to the centre
+          const t = easeInOutQuart((p - 0.38) / 0.27);
+          card.style.opacity = '1';
+          card.style.zIndex = '25';
+          if (t > 0.5 && !glare) { glare = true; card.classList.add('shimmer'); }
+          card.style.transform = `translate3d(${52 * (1 - t)}px, ${-118 * (1 - t)}px, 0) scale(${1.2 + t * 0.85})`;
+          inner.style.transform = `rotateY(${25 + t * 335}deg) rotateX(${10 * (1 - t)}deg) rotateZ(${-6 * (1 - t)}deg)`;
+        } else if (p >= 0.65 && p < 0.85) {
+          // Card grows to fill the screen
+          const t = easeInOutQuart((p - 0.65) / 0.20);
+          card.style.opacity = '1';
+          card.style.zIndex = '40';
+          card.style.transform = `translate3d(0px, 0px, 0) scale(${2.05 + t * (maxScale - 2.05)})`;
+          inner.style.transform = 'rotateY(360deg) rotateX(0deg) rotateZ(0deg)';
+        } else if (p >= 0.85) {
+          // Fade out into the app
+          const t = easeOutCubic((p - 0.85) / 0.15);
+          card.style.zIndex = '40';
+          card.style.opacity = String(Math.max(0, 1 - t));
+          card.style.transform = `translate3d(0px, 0px, 0) scale(${maxScale * (1 + t * 0.22)})`;
+          inner.style.transform = 'rotateY(360deg) rotateX(0deg) rotateZ(0deg)';
+        }
+
+        if (p < 1) raf = requestAnimationFrame(frame);
+        else finish();
+      }
+      raf = requestAnimationFrame(frame);
+    }
+
+    setTimeout(play, 250);
+  })();
+</script>
+
+
+<!-- ============ Login / Sign up ============ -->
+<div class="gate" id="authGate">
+  <div class="gate-card">
+    <div class="brand"><div class="logo">§</div><span>ANTRU <span style="color:#b9a4ff">WALLET</span></span></div>
+    <div id="gateBanner" style="display:none;margin-top:14px"></div>
+
+    <div class="auth-tabs" id="authTabs">
+      <button class="tab active" id="tabLogin">Login</button>
+      <button class="tab" id="tabSignup">Sign up</button>
+    </div>
+
+    <div id="formLogin">
+      <label for="loginEmail">Email</label>
+      <input class="field" id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+      <label for="loginPassword">Password</label>
+      <input class="field" id="loginPassword" type="password" placeholder="Apna password" autocomplete="current-password" />
+      <button class="btn btn-pri" id="loginBtn" style="margin-top:16px">Login</button>
+      <div style="text-align:right;margin-top:10px"><button class="link-btn" id="forgotBtn">Forgot password?</button></div>
+    </div>
+
+    <div id="formSignup" style="display:none">
+      <label for="signupName">Your name</label>
+      <input class="field" id="signupName" placeholder="e.g. Rahul Sharma" autocomplete="name" />
+      <label for="signupEmail">Email</label>
+      <input class="field" id="signupEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+      <label for="signupPassword">Password (kam se kam 6 characters)</label>
+      <input class="field" id="signupPassword" type="password" placeholder="Naya password" autocomplete="new-password" />
+      <button class="btn btn-pri" id="signupBtn" style="margin-top:16px">Create account</button>
+    </div>
+
+    <!-- Shown when a signed-in account has no wallet profile yet -->
+    <div id="formName" style="display:none">
+      <h2 style="margin-top:14px">Apna naam batayein</h2>
+      <div class="account-line" id="nameEmail"></div>
+      <label for="userName">Your name</label>
+      <input class="field" id="userName" placeholder="e.g. Rahul Sharma" autocomplete="name" />
+      <button class="btn btn-pri" id="saveNameBtn" style="margin-top:16px">Continue</button>
+      <div style="text-align:center;margin-top:10px"><button class="link-btn" id="nameSignOutBtn">Doosre account se login karein</button></div>
+    </div>
+
+    <div id="authMsg" class="notice" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ============ Main wallet ============ -->
+<div class="app" id="app" style="display:none">
+  <div class="home-bg" id="homeBg" aria-hidden="true"><div class="sb-text-img" id="homeBgText" hidden><span>scan</span><span>and pay</span></div></div>
+  <div id="globalBanner" style="display:none;margin-bottom:12px"></div>
+
+  <div class="top-row">
+    <div class="avatar" id="topAvatar">?</div>
+    <div class="search" id="searchBox">
+      <span class="s-ico">⌕</span>
+      <input class="s-input" id="searchInput" type="search" placeholder="Naam ya ID dhoondhein" autocomplete="off" />
+      <div class="search-drop" id="searchDrop"></div>
+    </div>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+  <div class="greet" id="greeting"></div>
+
+  <button class="scan-banner" id="btnScan" type="button">
+    <span class="sb-text"><span>scan</span><span>and pay</span></span>
+    <span class="sb-sub">QR scan karke turant payment karein</span>
+    <span class="sb-qr" aria-hidden="true">
+      <svg viewBox="0 0 5 5" shape-rendering="crispEdges">
+        <rect x="0" y="0" width="2" height="2" fill="#120d24"/><rect x="3" y="0" width="2" height="1" fill="#120d24"/>
+        <rect x="0" y="3" width="1" height="2" fill="#120d24"/><rect x="2" y="2" width="1" height="1" fill="#120d24"/>
+        <rect x="4" y="3" width="1" height="2" fill="#120d24"/><rect x="2" y="4" width="2" height="1" fill="#120d24"/>
+        <rect x="3" y="2" width="1" height="1" fill="#7c5ce7"/>
+      </svg>
+    </span>
+  </button>
+
+  <section id="adsBox" class="card ads" style="display:none">
+    <div class="ads-track" id="adsTrack"></div>
+    <div class="ads-dots" id="adsDots"></div>
+    <span class="ads-tag">AD</span>
+  </section>
+
+  <div class="act-row">
+    <button class="round-btn" id="btnQR"><span class="qi">▣</span>Your QR</button>
+    <button class="wide-btn" id="checkBalBtn"><span>◉</span>Check Balance</button>
+    <button class="round-btn" id="btnHistory"><span class="qi">↺</span>History</button>
+  </div>
+  <div class="act-row act-2">
+    <button class="wide-btn sm" id="btnAdd">＋ Recharge</button>
+    <button class="wide-btn sm" id="btnSendQuick">↗ Send</button>
+  </div>
+
+  <div class="sec-head"><h2>Recommended</h2><span class="muted" style="font-size:12px">Jinhe aapne pay kiya</span></div>
+  <div class="rec-row" id="recList"><div class="empty" style="padding:14px">Pay karke yahan logon ko dekhein.</div></div>
+
+  <!-- Hidden hooks used by the wallet logic -->
+  <span id="balance" style="display:none">0</span>
+  <span id="antruIdText" style="display:none"></span>
+  <button id="idChip" style="display:none"></button>
+  <button id="seeAll" style="display:none"></button>
+  <div id="transactions" style="display:none"></div>
+
+  <div class="footer">Made with love ❤️ for you</div>
+</div>
+
+<!-- ============ Side menu ============ -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div class="avatar" id="dAvatar">?</div>
+    <div style="min-width:0;flex:1"><b id="dName">—</b><div class="muted" id="dId" style="font-size:12px"></div></div>
+    <button class="x" id="drawerClose" aria-label="Close">✕</button>
+  </div>
+  <button class="mi" data-go="profile"><span class="mi-ico">👤</span>My profile</button>
+  <button class="mi" data-go="offers"><span class="mi-ico">🎁</span>Offers & ads</button>
+  <button class="mi" data-go="share"><span class="mi-ico">↗</span>Share my Antru ID</button>
+  <button class="mi" data-go="help"><span class="mi-ico">❓</span>How Antru works</button>
+  <button class="mi" data-go="about"><span class="mi-ico">ⓘ</span>About</button>
+  <button class="mi danger" data-go="signout"><span class="mi-ico">⏻</span>Sign out</button>
+</aside>
+
+<!-- ============ Add coins ============ -->
+<div class="modal" id="addModal">
+  <div class="dialog">
+    <div class="dialog-head"><h2>Add coins</h2><button class="x" data-close="addModal">✕</button></div>
+    <p class="muted" style="font-size:13px">Kitne § chahiye? Quick amount chunein ya khud likhein.</p>
+    <div class="chips">
+      <button data-amt="50">50 §</button><button data-amt="100">100 §</button><button data-amt="500">500 §</button><button data-amt="1000">1000 §</button>
+    </div>
+    <label for="coinAmount">Amount (§)</label>
+    <input class="field" id="coinAmount" type="number" min="1" step="1" placeholder="e.g. 250" />
+    <button class="btn btn-pri" id="genBtn" style="margin-top:14px">Generate payment QR</button>
+
+    <div id="paymentResult" style="display:none;text-align:center;margin-top:14px">
+      <div class="status">PAYMENT REQUEST CREATED</div>
+      <div class="qrbox"><div id="paymentQR"></div></div>
+      <div style="font-weight:850;font-size:24px" id="payAmount">₹0</div>
+      <div class="muted" style="font-size:12px;margin-top:4px" id="requestId"></div>
+      <a id="upiLink" href="#" class="btn btn-ghost" style="margin-top:14px;text-decoration:none">UPI app mein kholein</a>
+      <div class="notice info" style="text-align:left">Payment ke baad admin check karke coins credit karega.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Send coins (with QR scanner) ============ -->
+<div class="modal" id="sendModal">
+  <div class="dialog">
+    <div class="dialog-head"><h2>Send coins</h2><button class="x" data-close="sendModal">✕</button></div>
+    <p class="muted" style="font-size:13px">QR scan karein ya Antru ID type karein.</p>
+    <button class="btn btn-ghost" id="scanStartBtn" style="margin-top:12px">▣ QR scan karein</button>
+    <div class="scan-box" id="scanBox">
+      <video id="scanVideo" playsinline muted></video>
+      <canvas id="scanCanvas"></canvas>
+      <div class="scan-frame"></div>
+    </div>
+    <label for="sendTo">Recipient Antru ID</label>
+    <input class="field" id="sendTo" placeholder="e.g. ANTRU123456" autocapitalize="characters" />
+    <label for="sendAmount">Amount (§)</label>
+    <input class="field" id="sendAmount" type="number" min="1" step="1" placeholder="e.g. 50" />
+    <button class="btn btn-pri" id="sendBtn" style="margin-top:16px">Send coins</button>
+  </div>
+</div>
+
+<!-- ============ My QR ============ -->
+<div class="modal" id="qrModal">
+  <div class="dialog" style="text-align:center">
+    <div class="dialog-head"><h2>My Antru QR</h2><button class="x" data-close="qrModal">✕</button></div>
+    <p class="muted" style="font-size:13px">Doosre user ko ye QR dikhayein, wo aapko coins bhej sakenge.</p>
+    <div class="qrbox"><div id="myQR"></div></div>
+    <div style="font-weight:800;letter-spacing:.5px" id="myAntruId"></div>
+    <button class="btn btn-ghost" id="qrShareBtn" style="margin-top:14px">Share karein</button>
+  </div>
+</div>
+
+<!-- ============ Profile ============ -->
+<div class="modal" id="profileModal">
+  <div class="dialog">
+    <div class="dialog-head"><h2>My profile</h2><button class="x" data-close="profileModal">✕</button></div>
+    <div class="row" style="margin:14px 0 4px"><span class="muted">Email</span><span id="pEmail" style="font-size:13px;word-break:break-all"></span></div>
+    <div class="row" style="margin:8px 0"><span class="muted">Antru ID</span><b id="pId"></b></div>
+    <div class="row" style="margin:8px 0"><span class="muted">Joined</span><span id="pJoined" style="font-size:13px"></span></div>
+    <div class="row" style="margin:8px 0"><span class="muted">Status</span><span id="pStatus" style="font-size:13px"></span></div>
+
+    <div style="border-top:1px solid var(--line);margin:18px 0 0;padding-top:16px">
+      <h2>Naam badlein</h2>
+      <label for="pName">Naam</label>
+      <input class="field" id="pName" autocomplete="name" />
+      <button class="btn btn-ghost" id="saveProfileBtn" style="margin-top:12px">Naam save karein</button>
+    </div>
+
+    <div style="border-top:1px solid var(--line);margin:18px 0 0;padding-top:16px">
+      <h2>Password badlein</h2>
+      <label for="curPass">Purana password</label>
+      <input class="field" id="curPass" type="password" autocomplete="current-password" />
+      <label for="newPass">Naya password</label>
+      <input class="field" id="newPass" type="password" autocomplete="new-password" />
+      <label for="newPass2">Naya password dobara</label>
+      <input class="field" id="newPass2" type="password" autocomplete="new-password" />
+      <button class="btn btn-ghost" id="changePassBtn" style="margin-top:12px">Password change karein</button>
+      <div class="muted" style="font-size:11.5px;margin-top:8px">Agar account email link se bana tha aur password nahi hai, to login par "Forgot password?" se password set karein.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Offers & ads ============ -->
+<div class="modal" id="offersModal">
+  <div class="dialog">
+    <div class="dialog-head"><h2>Offers & ads</h2><button class="x" data-close="offersModal">✕</button></div>
+    <div id="offersList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ============ History ============ -->
+<div class="modal" id="historyModal">
+  <div class="dialog">
+    <div class="dialog-head"><h2>Transactions</h2><button class="x" data-close="historyModal">✕</button></div>
+    <div class="seg" id="txSeg" style="margin-top:12px">
+      <button data-f="all" class="on">Sab</button><button data-f="credit">Credit</button><button data-f="debit">Debit</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<!-- ============ How Antru works ============ -->
+<div class="modal" id="helpModal">
+  <div class="dialog">
+    <div class="dialog-head"><h2>How Antru works</h2><button class="x" data-close="helpModal">✕</button></div>
+    <div class="tx"><div><div class="tx-title">1. Coins request karein</div><div class="tx-meta">Add coins se amount chunein</div></div><span>＋</span></div>
+    <div class="tx"><div><div class="tx-title">2. UPI se payment karein</div><div class="tx-meta">Generate hone wala QR scan karein</div></div><span>▦</span></div>
+    <div class="tx"><div><div class="tx-title">3. Admin verify karega</div><div class="tx-meta">Payment check hone ke baad approval</div></div><span>✓</span></div>
+    <div class="tx"><div><div class="tx-title">4. Coins credit honge</div><div class="tx-meta">Balance turant update ho jayega</div></div><span>§</span></div>
+    <div class="tx"><div><div class="tx-title">Doosron ko bhejें</div><div class="tx-meta">Send mein QR scan karein ya Antru ID daalein</div></div><span>↗</span></div>
+  </div>
+</div>
+
+<!-- ============ About ============ -->
+<div class="modal" id="aboutModal">
+  <div class="dialog">
+    <div class="dialog-head"><h2>About</h2><button class="x" data-close="aboutModal">✕</button></div>
+    <div class="brand" style="margin-top:12px"><div class="logo">§</div><span>ANTRU <span style="color:#b9a4ff">WALLET</span></span></div>
+    <p class="muted" style="font-size:13px">Antru Wallet se apne doston aur community ke saath coins ka lena-dena aasan hai. Version 1.0</p>
+    <p class="muted" style="font-size:13px">Ye app <b style="color:var(--text)">Prince Jha</b> ne banaya hai.</p>
+    <a class="ig-btn" href="https://www.instagram.com/princejha01" target="_blank" rel="noopener noreferrer">
+      <span class="ig-ico">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#fff" stroke="none"/>
+        </svg>
+      </span>
+      <span><b>Instagram par follow karein</b><small>@princejha01</small></span>
+    </a>
+    <div class="footer" style="margin-top:20px">Made with love ❤️ for you</div>
+  </div>
+</div>
+
+<!-- ============ Share ============ -->
+<div class="modal" id="shareModal">
+  <div class="dialog" style="text-align:center">
+    <div class="dialog-head"><h2>Antru ID share karein</h2><button class="x" data-close="shareModal">✕</button></div>
+    <div style="font-size:22px;font-weight:850;letter-spacing:1px;margin:16px 0" id="shareId"></div>
+    <button class="btn btn-pri" id="shareNowBtn">Share karein</button>
+    <button class="btn btn-ghost" id="copyIdBtn" style="margin-top:10px">ID copy karein</button>
+  </div>
+</div>
+
+<!-- ============ Check Balance (bottom sheet) ============ -->
+<div class="modal" id="balanceModal">
+  <div class="dialog sheet-bottom">
+    <div class="dialog-head"><h2>Check Balance</h2><button class="x" data-close="balanceModal">✕</button></div>
+    <div class="bal-row">
+      <div class="bal-ico">§</div>
+      <div class="bal-info">
+        <div class="bal-title">Wallet balance</div>
+        <button class="bal-add" id="balAddBtn">+ Add Money</button>
+      </div>
+      <div class="bal-amt"><span id="balSheetAmt">0</span> §</div>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+  import {
+    getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut,
+    updatePassword, reauthenticateWithCredential, EmailAuthProvider
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot,
+    writeBatch, serverTimestamp, increment, getDocs, limit
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC2wgnRyUnCG7Xi0Jgd4iKn1fGdMVOyI6Q",
+    authDomain: "antru-2db81.firebaseapp.com",
+    projectId: "antru-2db81",
+    storageBucket: "antru-2db81.firebasestorage.app",
+    messagingSenderId: "734404690592",
+    appId: "1:734404690592:web:cb1eb4850261bbb43abfc5",
+    measurementId: "G-H9Y59MH43T"
+  };
+
+  // Default payment details. The admin app can override these from App control.
+  let CONFIG = { payeeName: "prince1538@axl", upiId: "prince1538@axl", currency: "INR" };
+
+  const app = initializeApp(firebaseConfig);
+  isSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const sendCoinsFn = httpsCallable(getFunctions(app), "transferCoins");
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+  // ---------- Helpers ----------
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmt = n => Number(n || 0).toLocaleString("en-IN");
+  const fmtDate = ts => (ts && ts.toDate) ? ts.toDate().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "Abhi";
+  const toMs = ts => (ts && ts.toMillis) ? ts.toMillis() : Date.now();
+  const newestFirst = (a, b) => toMs(b.createdAt) - toMs(a.createdAt);
+  const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const initials = n => (String(n || "?").trim().split(/\s+/).map(w => w[0]).join("").slice(0, 2) || "?").toUpperCase();
+  const withTimeout = (promise, ms = 20000) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(Object.assign(new Error("timeout"), { code: "app/timeout" })), ms))
+  ]);
+
+  function toast(msg, kind = "ok") {
+    const t = document.createElement("div");
+    t.className = "toast " + kind;
+    t.textContent = msg;
+    $("toasts").appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  const AUTH_ERRORS = {
+    "auth/invalid-credential": "Email ya password galat hai. Agar aapne pehle email link se account banaya tha, to 'Forgot password?' se password set karein.",
+    "auth/wrong-password": "Password galat hai.",
+    "auth/user-not-found": "Is email se koi account nahi mila. Pehle Sign up karein.",
+    "auth/invalid-email": "Email address sahi nahi lag raha.",
+    "auth/email-already-in-use": "Ye email pehle se registered hai. Login karein, ya 'Forgot password?' use karein.",
+    "auth/weak-password": "Password kam se kam 6 characters ka hona chahiye.",
+    "auth/missing-password": "Password daalein.",
+    "auth/too-many-requests": "Bahut zyada attempts ho gaye. Thodi der baad try karein.",
+    "auth/quota-exceeded": "Aaj ki email limit khatam ho gayi hai. Thodi der baad try karein.",
+    "auth/network-request-failed": "Internet connection check karke dobara try karein.",
+    "app/timeout": "Server se response nahi aaya. Internet check karein.",
+    "permission-denied": "Database access denied. Firestore rules publish karein.",
+    "unavailable": "Service abhi available nahi hai. Thodi der baad try karein.",
+    "not-found": "Database ya project setup nahi mila."
+  };
+  const friendlyError = e => AUTH_ERRORS[e?.code] || e?.message || "Kuch galat ho gaya.";
+
+  function showMsg(text) { $("authMsg").textContent = text; $("authMsg").style.display = text ? "block" : "none"; }
+  function setBusy(id, busy, label) { const b = $(id); b.disabled = busy; b.textContent = busy ? "Please wait..." : label; }
+  function showAuthForm(which) {
+    $("formLogin").style.display = which === "login" ? "block" : "none";
+    $("formSignup").style.display = which === "signup" ? "block" : "none";
+    $("formName").style.display = which === "name" ? "block" : "none";
+    $("authTabs").style.display = which === "name" ? "none" : "flex";
+    $("tabLogin").classList.toggle("active", which === "login");
+    $("tabSignup").classList.toggle("active", which === "signup");
+  }
+  $("tabLogin").onclick = () => { showMsg(""); showAuthForm("login"); };
+  $("tabSignup").onclick = () => { showMsg(""); showAuthForm("signup"); };
+
+  // ---------- Modals & drawer ----------
+  function openModal(id) { $(id).classList.add("show"); }
+  function closeModal(id) {
+    $(id).classList.remove("show");
+    if (id === "sendModal") stopScan();
+  }
+  document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => closeModal(b.dataset.close)));
+  document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) closeModal(m.id); }));
+
+  function openDrawer() { $("drawer").classList.add("show"); $("overlay").classList.add("show"); $("menuBtn").classList.add("open"); }
+  function closeDrawer() { $("drawer").classList.remove("show"); $("overlay").classList.remove("show"); $("menuBtn").classList.remove("open"); }
+  $("menuBtn").addEventListener("click", () => $("drawer").classList.contains("show") ? closeDrawer() : openDrawer());
+  $("drawerClose").addEventListener("click", closeDrawer);
+  $("overlay").addEventListener("click", closeDrawer);
+
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
+    const go = b.dataset.go;
+    closeDrawer();
+    if (go === "profile") openProfile();
+    if (go === "offers") { renderOffers(); openModal("offersModal"); }
+    if (go === "share") shareOpen();
+    if (go === "help") openModal("helpModal");
+    if (go === "about") openModal("aboutModal");
+    if (go === "signout") signOut(auth);
+  }));
+
+  // ---------- Login ----------
+  $("loginBtn").addEventListener("click", async () => {
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPassword").value;
+    if (!isEmail(email)) return showMsg("Sahi email address daalein.");
+    if (!password) return showMsg("Password daalein.");
+    setBusy("loginBtn", true, "Login");
+    showMsg("");
+    try { await withTimeout(signInWithEmailAndPassword(auth, email, password)); }
+    catch (e) { showMsg(friendlyError(e)); }
+    finally { setBusy("loginBtn", false, "Login"); }
+  });
+
+  $("forgotBtn").addEventListener("click", async () => {
+    const email = $("loginEmail").value.trim();
+    if (!isEmail(email)) return showMsg("Pehle upar email daalein, phir 'Forgot password?' dabayein.");
+    try {
+      await withTimeout(sendPasswordResetEmail(auth, email));
+      showMsg("Reset link " + email + " par bhej diya gaya hai. Inbox aur spam dono check karein.");
+    } catch (e) { showMsg(friendlyError(e)); }
+  });
+
+  // ---------- Profile creation (antruIds + users written together) ----------
+  const randomAntruId = () => "ANTRU" + Math.floor(100000 + Math.random() * 900000);
+  let creatingProfile = false;
+
+  async function createProfile(u, name) {
+    for (let i = 0; i < 8; i++) {
+      const antruId = randomAntruId();
+      const batch = writeBatch(db);
+      batch.set(doc(db, "antruIds", antruId), { uid: u.uid, name });
+      batch.set(doc(db, "users", u.uid), { antruId, name, email: u.email, balance: 0, status: "active", createdAt: serverTimestamp() });
+      try { await withTimeout(batch.commit()); return; }
+      catch (e) {
+        if (e.code !== "permission-denied") throw e;
+        const probe = await withTimeout(getDoc(doc(db, "users", u.uid))).catch(() => null);
+        if (!probe || probe.exists()) throw e;
+      }
+    }
+    throw new Error("Antru ID generate nahi ho paya. Dobara try karein.");
+  }
+
+  // ---------- Sign up ----------
+  $("signupBtn").addEventListener("click", async () => {
+    const name = $("signupName").value.trim();
+    const email = $("signupEmail").value.trim();
+    const password = $("signupPassword").value;
+    if (!name) return showMsg("Naam likhna zaroori hai.");
+    if (!isEmail(email)) return showMsg("Sahi email address daalein.");
+    if (appSettings.signupsEnabled === false) return showMsg("Naye accounts abhi band hain. Baad mein try karein.");
+    if (password.length < 6) return showMsg("Password kam se kam 6 characters ka hona chahiye.");
+    setBusy("signupBtn", true, "Create account");
+    showMsg("");
+    creatingProfile = true;
+    let accountCreated = false;
+    try {
+      const cred = await withTimeout(createUserWithEmailAndPassword(auth, email, password));
+      accountCreated = true;
+      await createProfile(cred.user, name);
+      creatingProfile = false;
+      await enterWallet();
+    } catch (e) {
+      creatingProfile = false;
+      if (accountCreated && auth.currentUser) {
+        $("userName").value = name;
+        $("nameEmail").textContent = "Logged in as: " + (auth.currentUser.email || "");
+        showAuthForm("name");
+      }
+      showMsg(friendlyError(e));
+    } finally { setBusy("signupBtn", false, "Create account"); }
+  });
+
+  // ---------- Name step (account exists without profile) ----------
+  $("saveNameBtn").addEventListener("click", async () => {
+    const name = $("userName").value.trim();
+    if (!name) return showMsg("Naam likhna zaroori hai.");
+    if (!auth.currentUser) return showMsg("Pehle login karein.");
+    setBusy("saveNameBtn", true, "Continue");
+    showMsg("");
+    creatingProfile = true;
+    try {
+      await createProfile(auth.currentUser, name);
+      creatingProfile = false;
+      await enterWallet();
+    } catch (e) { creatingProfile = false; showMsg(friendlyError(e)); }
+    finally { setBusy("saveNameBtn", false, "Continue"); }
+  });
+  $("nameSignOutBtn").addEventListener("click", () => signOut(auth));
+
+  // ---------- Session gate ----------
+  onAuthStateChanged(auth, async u => {
+    user = u;
+    unsubs.forEach(f => f()); unsubs = [];
+    if (!u) {
+      profile = null;
+      $("app").style.display = "none";
+      $("authGate").classList.remove("hide");
+      $("loginPassword").value = ""; $("signupPassword").value = "";
+      showAuthForm("login"); showMsg("");
+      closeDrawer();
+      return;
+    }
+    if (creatingProfile) return;
+    $("authGate").classList.remove("hide");
+    try {
+      const snap = await withTimeout(getDoc(doc(db, "users", u.uid)));
+      if (!snap.exists()) {
+        $("nameEmail").textContent = "Logged in as: " + (u.email || "");
+        showAuthForm("name");
+        return;
+      }
+      profile = snap.data();
+      await enterWallet();
+    } catch (e) {
+      showAuthForm("login");
+      showMsg(friendlyError(e));
+    }
+  });
+
+  // ---------- Wallet ----------
+  let user = null, profile = null, unsubs = [];
+  let txs = [], txFilter = "all";
+
+  async function enterWallet() {
+    unsubs.forEach(f => f()); unsubs = [];
+    $("authGate").classList.add("hide");
+    $("app").style.display = "block";
+    showMsg("");
+
+    unsubs.push(onSnapshot(doc(db, "users", user.uid), s => {
+      if (!s.exists()) return;
+      profile = s.data();
+      myProfileStatus = profile.status || "active";
+      $("balance").textContent = fmt(profile.balance);
+      $("balSheetAmt").textContent = fmt(profile.balance);
+      $("antruIdText").textContent = profile.antruId;
+      $("greeting").textContent = "Hi, " + profile.name;
+      $("dName").textContent = profile.name;
+      $("dId").textContent = profile.antruId;
+      $("dAvatar").textContent = initials(profile.name);
+      $("topAvatar").textContent = initials(profile.name);
+      renderBanner();
+    }, () => {}));
+
+    unsubs.push(onSnapshot(query(collection(db, "transactions"), where("uid", "==", user.uid)), s => {
+      txs = s.docs.map(d => d.data()).sort(newestFirst);
+      renderRecent(); refreshRecommended();
+      if ($("historyModal").classList.contains("show")) renderHistory();
+    }, () => {}));
+  }
+
+  function txRow(t) {
+    return `<div class="tx">
+      <div style="min-width:0"><div class="tx-title">${esc(t.title)}</div><div class="tx-meta">${esc(fmtDate(t.createdAt))}</div></div>
+      <span class="${t.amount >= 0 ? 'plus' : 'minus'}">${t.amount >= 0 ? '+' : ''}${fmt(t.amount)} §</span></div>`;
+  }
+  function renderRecent() {
+    const list = txs.slice(0, 5);
+    $("transactions").innerHTML = list.length ? list.map(txRow).join("") : '<div class="empty">Abhi koi transaction nahi hai.</div>';
+  }
+  function renderHistory() {
+    const list = txs.filter(t => txFilter === "all" || (txFilter === "credit" ? t.amount >= 0 : t.amount < 0));
+    $("historyList").innerHTML = list.length ? list.map(txRow).join("") : '<div class="empty">Koi transaction nahi.</div>';
+  }
+  $("txSeg").addEventListener("click", e => {
+    const b = e.target.closest("button[data-f]"); if (!b) return;
+    txFilter = b.dataset.f;
+    document.querySelectorAll("#txSeg button").forEach(x => x.classList.toggle("on", x === b));
+    renderHistory();
+  });
+  $("btnHistory").onclick = () => { renderHistory(); openModal("historyModal"); };
+  $("seeAll").onclick = () => { renderHistory(); openModal("historyModal"); };
+
+  // ---------- Admin controls (appConfig/main + own status) ----------
+  let appSettings = {}, myProfileStatus = "active";
+
+  function blockReason(kind) {
+    if (appSettings.maintenanceMode) return "Wallet maintenance mein hai. Thodi der baad try karein.";
+    if (myProfileStatus === "frozen") return "Aapka account freeze hai. Support se sampark karein.";
+    if (kind === "recharge" && appSettings.rechargeEnabled === false) return "Add coins abhi band hain.";
+    if (kind === "send" && appSettings.transfersEnabled === false) return "Send coins abhi band hain.";
+    return "";
+  }
+
+  function renderBanner() {
+    const msgs = [];
+    if (appSettings.maintenanceMode) msgs.push(["bad", appSettings.maintenanceMessage || "Wallet maintenance mein hai. Thodi der baad try karein."]);
+    if (myProfileStatus === "frozen") msgs.push(["bad", "Aapka account abhi freeze hai. Add coins aur send coins band hain."]);
+    if (appSettings.announcement) msgs.push(["info", appSettings.announcement]);
+    const html = msgs.map(([kind, text]) => `<div class="notice ${kind}">${esc(text)}</div>`).join("");
+    for (const id of ["globalBanner", "gateBanner"]) {
+      const el = $(id); if (!el) continue;
+      el.innerHTML = html;
+      el.style.display = msgs.length ? "block" : "none";
+    }
+    const canRecharge = !blockReason("recharge"), canSend = !blockReason("send");
+    $("btnAdd").disabled = !canRecharge; $("genBtn").disabled = !canRecharge;
+    $("btnScan").disabled = !canSend; $("sendBtn").disabled = !canSend;
+  }
+
+  function applyConfig(c) {
+    appSettings = c || {};
+    if (appSettings.upiId) CONFIG.upiId = appSettings.upiId;
+    if (appSettings.payeeName) CONFIG.payeeName = appSettings.payeeName;
+    renderBanner();
+  }
+  onSnapshot(doc(db, "appConfig", "main"), s => applyConfig(s.exists() ? s.data() : {}), () => {});
+
+  // ---------- Ads (managed from the admin app) ----------
+  let adsList = [];
+  const adsAuto = () => appSettings.adsAuto !== false;
+  const safeLink = l => !!l && /^https?:\/\//i.test(l);
+  function isLiveAd(a) {
+    const now = Date.now();
+    if (a.active === false || !a.imageUrl) return false;
+    if (a.startAt && a.startAt > now) return false;
+    if (a.endAt && a.endAt < now) return false;
+    return true;
+  }
+  function trackClick(id) { updateDoc(doc(db, "ads", id), { clicks: increment(1) }).catch(() => {}); }
+
+  // Reusable slider: auto-slides (if admin enables it), swipe/drag, and dots
+  function makeCarousel(cfg) {
+    const { box, track, dots, on = "#ffffff", off = "#ffffff55", interval = 5000 } = cfg;
+    const st = { i: 0, n: 0, timer: null, pause: null, swiped: false, sx: null, sy: null };
+    const show = i => {
+      st.i = i;
+      track.style.transform = `translateX(-${i * 100}%)`;
+      dots.querySelectorAll("span").forEach((d, k) => { d.style.background = k === i ? on : off; });
+    };
+    const stop = () => { clearInterval(st.timer); st.timer = null; };
+    const start = () => {
+      stop();
+      if (st.n > 1 && adsAuto()) st.timer = setInterval(() => show((st.i + 1) % st.n), interval);
+    };
+    const pauseFor = ms => { stop(); clearTimeout(st.pause); st.pause = setTimeout(start, ms); };
+    const next = () => { if (st.n > 1) { show((st.i + 1) % st.n); pauseFor(7000); } };
+    const prev = () => { if (st.n > 1) { show((st.i - 1 + st.n) % st.n); pauseFor(7000); } };
+
+    dots.addEventListener("click", e => {
+      const d = e.target.closest("[data-dot]"); if (!d) return;
+      show(Number(d.dataset.dot)); pauseFor(7000);
+    });
+
+    const begin = (x, y) => { st.sx = x; st.sy = y; stop(); };
+    const finish = (x, y) => {
+      if (st.sx === null) return;
+      const dx = x - st.sx, dy = y - st.sy;
+      st.sx = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        st.swiped = true;
+        dx < 0 ? next() : prev();
+        setTimeout(() => { st.swiped = false; }, 0);
+      } else { start(); }
+    };
+    box.addEventListener("touchstart", e => begin(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    box.addEventListener("touchend", e => finish(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
+    box.addEventListener("mousedown", e => begin(e.clientX, e.clientY));
+    box.addEventListener("mouseup", e => finish(e.clientX, e.clientY));
+    box.addEventListener("click", e => { if (st.swiped) { e.preventDefault(); e.stopPropagation(); } }, true);
+
+    return {
+      render(html, n) {
+        st.n = n;
+        track.innerHTML = html;
+        dots.innerHTML = n > 1 ? Array.from({ length: n }, (_, k) => `<span data-dot="${k}"></span>`).join("") : "";
+        if (st.i >= n) st.i = 0;
+        show(st.i);
+        start();
+      },
+      stop
+    };
+  }
+
+  const homeAds = makeCarousel({ box: $("adsBox"), track: $("adsTrack"), dots: $("adsDots"), interval: 5000 });
+  const successAds = makeCarousel({ box: $("ssAds"), track: $("ssTrack"), dots: $("ssDots"), on: "#14532d", off: "#14532d33", interval: 4500 });
+
+  [$("adsTrack"), $("ssTrack")].forEach(t => t.addEventListener("click", e => {
+    const a = e.target.closest("a[data-ad-id]"); if (a) trackClick(a.dataset.adId);
+  }));
+
+  function adSlideHtml(a) {
+    const img = `<img src="${esc(a.imageUrl)}" alt="${esc(a.title || "Ad")}">`;
+    return `<div class="ads-slide">${safeLink(a.link)
+      ? `<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" data-ad-id="${esc(a.id)}" style="display:block">${img}</a>`
+      : img}</div>`;
+  }
+
+  function renderAds() {
+    if (!adsList.length) { $("adsBox").style.display = "none"; homeAds.stop(); return; }
+    $("adsBox").style.display = "block";
+    homeAds.render(adsList.map(adSlideHtml).join(""), adsList.length);
+  }
+
+  // ---------- Scan & pay visuals (images + text position set from admin) ----------
+  let scanSq = {}, scanBg = {};
+  // pos is "top-left", "middle-center", "bottom-right" etc.
+  function placeLabel(el, pos) {
+    const [vy, hx] = String(pos || "top-left").split("-");
+    const s = el.style;
+    s.position = "absolute"; s.top = "auto"; s.bottom = "auto"; s.left = "auto"; s.right = "auto";
+    s.margin = "0"; s.padding = "18px"; s.boxSizing = "border-box";
+    if (vy === "top") s.top = "0"; else if (vy === "bottom") s.bottom = "0"; else s.top = "50%";
+    if (hx === "left") s.left = "0"; else if (hx === "right") s.right = "0"; else s.left = "50%";
+    s.transform = `translate(${hx === "center" ? -50 : 0}%, ${vy === "middle" ? -50 : 0}%)`;
+    s.textAlign = hx === "left" ? "left" : hx === "right" ? "right" : "center";
+    s.alignItems = hx === "left" ? "flex-start" : hx === "right" ? "flex-end" : "center";
+  }
+  function applyScanVisuals() {
+    const b = $("btnScan"), t = b.querySelector(".sb-text");
+    if (scanSq.image) {
+      b.classList.add("has-img");
+      b.style.backgroundImage = `url("${scanSq.image}")`;
+      placeLabel(t, scanSq.pos);
+    } else {
+      b.classList.remove("has-img"); b.style.backgroundImage = ""; t.removeAttribute("style");
+    }
+    const hb = $("homeBg"), ht = $("homeBgText");
+    if (scanBg.image) {
+      hb.style.backgroundImage = `url("${scanBg.image}")`;
+      hb.classList.add("on");
+      ht.hidden = false;
+      placeLabel(ht, scanBg.pos);
+    } else {
+      hb.classList.remove("on"); hb.style.backgroundImage = ""; ht.hidden = true;
+    }
+  }
+  onSnapshot(doc(db, "appConfig", "scanSq"), s => { scanSq = s.exists() ? s.data() : {}; applyScanVisuals(); }, () => {});
+  onSnapshot(doc(db, "appConfig", "scanBg"), s => { scanBg = s.exists() ? s.data() : {}; applyScanVisuals(); }, () => {});
+
+  // ---------- Payment success screen (with ads) ----------
+  let lastPay = null;
+  function showPaymentSuccess(toId, amount) {
+    const now = new Date();
+    lastPay = { toId, amount, at: now };
+    $("ssDate").textContent = now.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    $("ssAmt").textContent = fmt(amount) + " §";
+    $("ssId").textContent = toId;
+    $("ssName").textContent = "Antru user";
+    $("ssAvatar").textContent = "§";
+    const showAds = appSettings.successAds !== false && adsList.length > 0;
+    $("ssAds").style.display = showAds ? "block" : "none";
+    if (showAds) successAds.render(adsList.map(adSlideHtml).join(""), adsList.length); else successAds.stop();
+    $("successScreen").classList.add("show");
+    getDoc(doc(db, "antruIds", toId)).then(s => {
+      if (lastPay && lastPay.toId === toId && s.exists()) {
+        $("ssName").textContent = s.data().name;
+        $("ssAvatar").textContent = initials(s.data().name);
+      }
+    }).catch(() => {});
+  }
+  function closeSuccess() { $("successScreen").classList.remove("show"); successAds.stop(); }
+  $("ssDone").onclick = closeSuccess;
+  $("ssDetails").onclick = () => { closeSuccess(); renderHistory(); openModal("historyModal"); };
+  $("ssShare").onclick = () => {
+    if (!lastPay) return;
+    shareNow(`Antru Wallet: ${fmt(lastPay.amount)} § ${lastPay.toId} ko bheja gaya.\nDate: ${$("ssDate").textContent}`);
+  };
+
+  function renderOffers() {
+    $("offersList").innerHTML = adsList.length ? adsList.map(a => {
+      const inner = `<img src="${esc(a.imageUrl)}" alt="${esc(a.title || "Offer")}"><div>${esc(a.title || "Offer")}</div>`;
+      return safeLink(a.link)
+        ? `<a class="offer" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" data-ad-id="${esc(a.id)}">${inner}</a>`
+        : `<div class="offer">${inner}</div>`;
+    }).join("") : '<div class="empty">Abhi koi offer nahi hai.</div>';
+  }
+  $("offersList").addEventListener("click", e => {
+    const a = e.target.closest("a[data-ad-id]"); if (a) trackClick(a.dataset.adId);
+  });
+
+  onSnapshot(collection(db, "ads"), s => {
+    adsList = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(isLiveAd)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    renderAds();
+    if ($("offersModal").classList.contains("show")) renderOffers();
+  }, () => {});
+
+  // ---------- Recharge ----------
+  document.querySelectorAll("[data-amt]").forEach(b => b.addEventListener("click", () => { $("coinAmount").value = b.dataset.amt; }));
+
+  $("btnAdd").onclick = () => {
+    $("paymentResult").style.display = "none";
+    $("coinAmount").value = "";
+    openModal("addModal");
+  };
+
+  $("genBtn").onclick = async () => {
+    const amount = Number($("coinAmount").value);
+    const rReason = blockReason("recharge");
+    if (rReason) return toast(rReason, "err");
+    const minR = appSettings.minRecharge || 1, maxR = appSettings.maxRecharge || 100000;
+    if (!Number.isInteger(amount) || amount < minR || amount > maxR) return toast(`Amount ${fmt(minR)} aur ${fmt(maxR)} § ke beech hona chahiye.`, "err");
+    const id = "ANR" + Date.now().toString().slice(-9);
+    try {
+      await withTimeout(setDoc(doc(db, "rechargeRequests", id), {
+        uid: user.uid, antruId: profile.antruId, name: profile.name, amount, status: "Pending", createdAt: serverTimestamp()
+      }));
+    } catch (e) { return toast("Request save nahi ho paayi: " + friendlyError(e), "err"); }
+    const upi = `upi://pay?pa=${encodeURIComponent(CONFIG.upiId)}&pn=${encodeURIComponent(CONFIG.payeeName)}&am=${amount}&cu=${CONFIG.currency}&tn=${encodeURIComponent("Antru recharge " + id)}`;
+    $("paymentQR").innerHTML = "";
+    new QRCode($("paymentQR"), { text: upi, width: 220, height: 220, colorDark: "#111111", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+    $("payAmount").textContent = "₹" + fmt(amount);
+    $("requestId").textContent = "Request ID: " + id;
+    $("upiLink").href = upi;
+    $("paymentResult").style.display = "block";
+  };
+
+  // ---------- Send coins + QR scanner ----------
+  let scanStream = null, scanRaf = null;
+
+  $("btnScan").onclick = () => {
+    $("sendTo").value = ""; $("sendAmount").value = "";
+    openModal("sendModal");
+  };
+
+  async function startScan() {
+    if (!navigator.mediaDevices?.getUserMedia) return toast("Is browser mein camera support nahi hai. ID type karein.", "err");
+    if (!window.jsQR) return toast("Scanner load nahi hua. Internet check karein.", "err");
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    } catch (e) { return toast("Camera permission nahi mili.", "err"); }
+    const v = $("scanVideo");
+    v.srcObject = scanStream;
+    await v.play().catch(() => {});
+    $("scanBox").style.display = "block";
+    const c = $("scanCanvas"), ctx = c.getContext("2d", { willReadFrequently: true });
+    const tick = () => {
+      if (!scanStream) return;
+      if (v.readyState === v.HAVE_ENOUGH_DATA && v.videoWidth) {
+        c.width = v.videoWidth; c.height = v.videoHeight;
+        ctx.drawImage(v, 0, 0, c.width, c.height);
+        const img = ctx.getImageData(0, 0, c.width, c.height);
+        const code = jsQR(img.data, c.width, c.height, { inversionAttempts: "dontInvert" });
+        if (code && code.data) return handleScan(code.data);
+      }
+      scanRaf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  function stopScan() {
+    cancelAnimationFrame(scanRaf);
+    scanStream?.getTracks().forEach(t => t.stop());
+    scanStream = null;
+    $("scanBox").style.display = "none";
+  }
+
+  function handleScan(text) {
+    stopScan();
+    const m = /^ANTRU_USER:(ANTRU\d+)$/i.exec(String(text).trim());
+    if (!m) return toast("Ye Antru QR nahi hai.", "err");
+    $("sendTo").value = m[1].toUpperCase();
+    toast("ID mil gaya: " + m[1].toUpperCase());
+  }
+
+  $("scanStartBtn").addEventListener("click", startScan);
+
+  $("sendBtn").onclick = async () => {
+    const toAntruId = $("sendTo").value.trim().toUpperCase();
+    const amount = Number($("sendAmount").value);
+    if (!toAntruId || !Number.isInteger(amount) || amount < 1) return toast("Recipient ID aur valid amount daalein.", "err");
+    const sReason = blockReason("send");
+    if (sReason) return toast(sReason, "err");
+    try {
+      await withTimeout(sendCoinsFn({ toAntruId, amount }));
+      stopScan();
+      closeModal("sendModal");
+      showPaymentSuccess(toAntruId, amount);
+    } catch (e) { toast(e.message || friendlyError(e), "err"); }
+  };
+
+  // ---------- My QR & share ----------
+  $("btnQR").onclick = () => {
+    if (!profile) return;
+    $("myQR").innerHTML = "";
+    new QRCode($("myQR"), { text: "ANTRU_USER:" + profile.antruId, width: 220, height: 220, colorDark: "#111111", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+    $("myAntruId").textContent = profile.antruId;
+    openModal("qrModal");
+  };
+
+  const shareText = () => `Mera Antru ID: ${profile.antruId}\nMujhe Antru Wallet par coins bhejein.`;
+
+  async function shareNow(text) {
+    try {
+      if (navigator.share) { await navigator.share({ title: "Antru Wallet", text, url: location.href }); return; }
+      await navigator.clipboard.writeText(text);
+      toast("Copy ho gaya. Ab kahin bhi paste karein.");
+    } catch (e) { if (e.name !== "AbortError") toast("Share nahi ho paaya.", "err"); }
+  }
+
+  function shareOpen() {
+    if (!profile) return;
+    $("shareId").textContent = profile.antruId;
+    openModal("shareModal");
+  }
+  $("shareNowBtn").addEventListener("click", () => shareNow(shareText()));
+  $("qrShareBtn").addEventListener("click", () => shareNow(shareText()));
+  $("copyIdBtn").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(profile.antruId); toast("ID copy ho gaya."); }
+    catch (e) { toast("Copy nahi ho paaya.", "err"); }
+  });
+  $("idChip").addEventListener("click", async () => {
+    if (!profile) return;
+    try { await navigator.clipboard.writeText(profile.antruId); toast("Antru ID copy ho gaya."); }
+    catch (e) { shareOpen(); }
+  });
+
+  // ---------- Profile ----------
+  function openProfile() {
+    if (!profile) return;
+    $("pEmail").textContent = user.email || "—";
+    $("pId").textContent = profile.antruId;
+    $("pJoined").textContent = fmtDate(profile.createdAt);
+    $("pStatus").innerHTML = myProfileStatus === "frozen" ? '<span class="status">FROZEN</span>' : '<span style="color:var(--green)">Active</span>';
+    $("pName").value = profile.name || "";
+    $("curPass").value = ""; $("newPass").value = ""; $("newPass2").value = "";
+    openModal("profileModal");
+  }
+
+  $("saveProfileBtn").addEventListener("click", async () => {
+    const name = $("pName").value.trim();
+    if (!name) return toast("Naam khali nahi ho sakta.", "err");
+    try {
+      await withTimeout(updateDoc(doc(db, "users", user.uid), { name }));
+      toast("Naam save ho gaya.");
+    } catch (e) { toast(friendlyError(e), "err"); }
+  });
+
+  $("changePassBtn").addEventListener("click", async () => {
+    const cur = $("curPass").value, n1 = $("newPass").value, n2 = $("newPass2").value;
+    if (!cur) return toast("Purana password daalein.", "err");
+    if (n1.length < 6) return toast("Naya password kam se kam 6 characters ka ho.", "err");
+    if (n1 !== n2) return toast("Naye password match nahi ho rahe.", "err");
+    $("changePassBtn").disabled = true;
+    try {
+      await withTimeout(reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, cur)));
+      await withTimeout(updatePassword(user, n1));
+      $("curPass").value = ""; $("newPass").value = ""; $("newPass2").value = "";
+      toast("Password badal gaya.");
+    } catch (e) {
+      const wrong = e.code === "auth/invalid-credential" || e.code === "auth/wrong-password";
+      toast(wrong ? "Purana password galat hai." : friendlyError(e), "err");
+    } finally { $("changePassBtn").disabled = false; }
+  });
+
+  // ---------- Keep my name in sync for the transfer receipt ----------
+  // (name changes are saved on users/{uid}; antruIds keeps the name used at signup)
+
+  // ---------- Home layout behaviour ----------
+  $("checkBalBtn").onclick = () => {
+    if (!profile) return;
+    $("balSheetAmt").textContent = fmt(profile.balance);
+    openModal("balanceModal");
+  };
+  $("balAddBtn").onclick = () => {
+    closeModal("balanceModal");
+    $("paymentResult").style.display = "none";
+    $("coinAmount").value = "";
+    openModal("addModal");
+  };
+  $("btnSendQuick").onclick = () => { $("sendTo").value = ""; $("sendAmount").value = ""; openModal("sendModal"); };
+  // Scan banner: the existing handler opens Send; this starts the camera once it is open
+  $("btnScan").addEventListener("click", () => setTimeout(startScan, 350));
+
+  function openSendTo(id) {
+    $("sendTo").value = id;
+    $("sendAmount").value = "";
+    openModal("sendModal");
+    setTimeout(() => $("sendAmount").focus(), 200);
+  }
+
+  // Search by exact Antru ID, or by name prefix (case-sensitive, as stored at signup)
+  let searchTimer = null, searchSeq = 0;
+  const searchInput = $("searchInput");
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => runSearch(searchInput.value.trim()), 300);
+  });
+  searchInput.addEventListener("focus", () => { if (searchInput.value.trim()) runSearch(searchInput.value.trim()); });
+  document.addEventListener("click", e => { if (!$("searchBox").contains(e.target)) $("searchDrop").style.display = "none"; });
+
+  async function runSearch(q) {
+    const seq = ++searchSeq;
+    const drop = $("searchDrop");
+    if (q.length < 2) { drop.style.display = "none"; return; }
+    drop.style.display = "block";
+    drop.innerHTML = '<div class="empty" style="padding:14px">Dhoond rahe hain…</div>';
+    let results = [];
+    try {
+      if (/^ANTRU\d{6}$/i.test(q)) {
+        const s = await withTimeout(getDoc(doc(db, "antruIds", q.toUpperCase())));
+        if (s.exists()) results = [{ id: q.toUpperCase(), name: s.data().name }];
+      } else {
+        const s = await withTimeout(getDocs(query(collection(db, "antruIds"), where("name", ">=", q), where("name", "<=", q + "\uf8ff"), limit(8))));
+        results = s.docs.map(d => ({ id: d.id, name: d.data().name }));
+      }
+    } catch (e) {
+      if (seq === searchSeq) drop.innerHTML = `<div class="empty" style="padding:14px">${esc(friendlyError(e))}</div>`;
+      return;
+    }
+    if (seq !== searchSeq) return;
+    results = results.filter(r => !profile || r.id !== profile.antruId);
+    drop.innerHTML = results.length
+      ? results.map(r => `<button class="s-item" data-id="${esc(r.id)}"><span class="avatar" style="width:40px;height:40px;font-size:14px">${esc(initials(r.name))}</span><span class="grow"><b>${esc(r.name)}</b><small>${esc(r.id)}</small></span></button>`).join("")
+      : '<div class="empty" style="padding:14px">Koi user nahi mila.</div>';
+  }
+  $("searchDrop").addEventListener("click", e => {
+    const b = e.target.closest("[data-id]"); if (!b) return;
+    $("searchDrop").style.display = "none";
+    searchInput.value = "";
+    openSendTo(b.dataset.id);
+  });
+
+  // Recommended = people you recently paid (read from your "Sent to ANTRUxxx" transactions)
+  let recSeq = 0;
+  async function refreshRecommended() {
+    const seq = ++recSeq;
+    const ids = [];
+    for (const t of txs) {
+      const m = /^Sent to (ANTRU\d+)$/i.exec(t.title || "");
+      if (m && !ids.includes(m[1].toUpperCase())) ids.push(m[1].toUpperCase());
+      if (ids.length >= 8) break;
+    }
+    if (!ids.length) {
+      $("recList").innerHTML = '<div class="empty" style="padding:14px">Pay karke yahan logon ko dekhein.</div>';
+      return;
+    }
+    const items = (await Promise.all(ids.map(async id => {
+      try { const s = await getDoc(doc(db, "antruIds", id)); return s.exists() ? { id, name: s.data().name } : null; }
+      catch (e) { return null; }
+    }))).filter(Boolean);
+    if (seq !== recSeq) return;
+    $("recList").innerHTML = items.map(r => `
+      <button class="rec" data-id="${esc(r.id)}">
+        <span class="circle">${esc(initials(r.name))}</span>
+        <span class="nm">${esc(r.name.split(" ")[0])}</span>
+      </button>`).join("");
+  }
+  $("recList").addEventListener("click", e => {
+    const b = e.target.closest("[data-id]"); if (b) openSendTo(b.dataset.id);
+  });
+
+</script>
+<!-- ============ Payment success ============ -->
+<div class="success-screen" id="successScreen" role="dialog" aria-label="Payment successful">
+  <div class="ss-top">
+    <div class="ss-tick"><svg viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div class="ss-title">Payment Successful</div>
+    <div class="ss-date" id="ssDate"></div>
+  </div>
+  <div class="ss-card">
+    <div class="ss-row">
+      <div class="ss-avatar" id="ssAvatar">§</div>
+      <div style="min-width:0"><div class="ss-name" id="ssName"></div><div class="ss-id" id="ssId"></div></div>
+    </div>
+    <div class="ss-amt" id="ssAmt"></div>
+    <div class="ss-actions">
+      <button class="ss-btn" id="ssDetails" type="button">View Details</button>
+      <button class="ss-btn" id="ssShare" type="button">Share Receipt</button>
+    </div>
+  </div>
+  <section class="ss-ads" id="ssAds" style="display:none">
+    <div class="ads-track" id="ssTrack"></div>
+    <div class="ads-dots" id="ssDots"></div>
+    <span class="ads-tag">AD</span>
+  </section>
+  <div class="ss-foot"><button class="ss-done" id="ssDone" type="button">DONE</button></div>
+</div>
+</body>
+</html>
