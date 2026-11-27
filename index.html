@@ -53,6 +53,7 @@
     .gate-kicker{margin-top:5px;color:#a8adbf;font-size:11px;letter-spacing:1.7px;text-transform:uppercase}
     .gate-welcome{font-size:23px;font-weight:850;letter-spacing:-.6px;margin:26px 0 3px}
     .gate-subtitle{font-size:12.5px;color:#9da4b8;margin-bottom:17px}
+    .phone-auth{margin-top:10px;width:100%;border:1px solid rgba(103,232,249,.28);background:linear-gradient(120deg,rgba(103,232,249,.10),rgba(167,139,250,.10));border-radius:14px;padding:12px;font-weight:800}
     .auth-tabs{display:flex;gap:7px;margin:0 0 15px;padding:5px;border-radius:15px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06)}
     .auth-tabs .tab{flex:1}
     .tab{background:transparent;color:#9299aa;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:750;border:1px solid transparent;transition:.2s}
@@ -487,6 +488,7 @@
       <div style="text-align:right;margin-top:10px"><button class="link-btn" id="forgotBtn">Forgot password?</button></div>
       <div class="auth-divider"><span>OR</span></div>
       <button class="btn btn-google" id="googleLoginBtn" type="button"><span class="google-mark">G</span> Continue with Google</button>
+      <button class="phone-auth" id="phoneLoginOpen" type="button">📱 Continue with Phone Number</button>
     </div>
 
     <div id="formSignup" style="display:none">
@@ -499,6 +501,7 @@
       <button class="btn btn-pri" id="signupBtn" style="margin-top:16px">Create account</button>
       <div class="auth-divider"><span>OR</span></div>
       <button class="btn btn-google" id="googleSignupBtn" type="button"><span class="google-mark">G</span> Sign up with Google</button>
+      <button class="phone-auth" id="phoneSignupOpen" type="button">📱 Sign up with Phone Number</button>
     </div>
 
     <!-- Shown when a signed-in account has no wallet profile yet -->
@@ -509,6 +512,35 @@
       <input class="field" id="userName" placeholder="e.g. Rahul Sharma" autocomplete="name" />
       <button class="btn btn-pri" id="saveNameBtn" style="margin-top:16px">Continue</button>
       <div style="text-align:center;margin-top:10px"><button class="link-btn" id="nameSignOutBtn">Doosre account se login karein</button></div>
+    </div>
+
+    <div id="formPhone" style="display:none;margin-top:14px">
+      <h3 style="margin:0 0 8px">Phone verification</h3>
+      <label for="phoneNumberInput">Mobile number</label>
+      <input class="field" id="phoneNumberInput" type="tel" inputmode="tel" placeholder="+91 98765 43210" autocomplete="tel" />
+      <div id="recaptcha-container" style="margin:12px 0"></div>
+      <button class="btn btn-pri" id="sendPhoneOtpBtn" type="button" style="width:100%">Send OTP</button>
+      <div id="phoneOtpArea" style="display:none;margin-top:12px">
+        <label for="phoneOtpInput">6-digit OTP</label>
+        <input class="field" id="phoneOtpInput" inputmode="numeric" maxlength="6" placeholder="Enter OTP" />
+        <button class="btn btn-pri" id="verifyPhoneOtpBtn" type="button" style="width:100%;margin-top:10px">Verify & continue</button>
+      </div>
+      <button class="link-btn" id="phoneBackBtn" type="button" style="margin-top:12px">← Back to login</button>
+    </div>
+
+    <div id="formDetails" style="display:none;margin-top:14px">
+      <h2 id="detailsFormTitle" style="margin:0 0 5px">Complete your profile</h2>
+      <div id="detailsFormDescription" class="muted" style="font-size:12px;margin-bottom:8px"></div>
+      <div class="account-line" id="detailsAccount"></div>
+      <label for="detailsName">Full name *</label><input class="field" id="detailsName" autocomplete="name" placeholder="Your full name" />
+      <label for="detailsAge">Age *</label><input class="field" id="detailsAge" type="number" min="13" max="100" placeholder="Your age" />
+      <label for="detailsPhone">Mobile number *</label><input class="field" id="detailsPhone" type="tel" placeholder="+91 98765 43210" />
+      <label for="detailsState">State *</label><input class="field" id="detailsState" placeholder="State" />
+      <label for="detailsCity">City *</label><input class="field" id="detailsCity" placeholder="City" />
+      <label for="detailsGender">Gender (optional)</label><select class="field" id="detailsGender"><option value="">Prefer not to say</option><option>Male</option><option>Female</option><option>Other</option></select>
+      <div id="customProfileFields"></div>
+      <button class="btn btn-pri" id="saveDetailsBtn" type="button" style="width:100%;margin-top:16px">Save details & continue</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">Your details are used for your wallet profile. Only collect information you are comfortable sharing.</div>
     </div>
 
     <div id="authMsg" class="notice" style="display:none"></div>
@@ -758,7 +790,8 @@
     getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged,
     createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut,
     updatePassword, reauthenticateWithCredential, EmailAuthProvider,
-    GoogleAuthProvider, signInWithPopup
+    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+    RecaptchaVerifier, signInWithPhoneNumber
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot, writeBatch, serverTimestamp, increment, getDocs, limit, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -779,7 +812,7 @@
   isSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
   const auth = getAuth(app);
   const db = getFirestore(app);
-  setPersistence(auth, browserLocalPersistence).catch(() => {});
+  await setPersistence(auth, browserLocalPersistence).catch(() => {});
 
   // ---------- Helpers ----------
   const $ = id => document.getElementById(id);
@@ -827,7 +860,9 @@
     $("formLogin").style.display = which === "login" ? "block" : "none";
     $("formSignup").style.display = which === "signup" ? "block" : "none";
     $("formName").style.display = which === "name" ? "block" : "none";
-    $("authTabs").style.display = which === "name" ? "none" : "flex";
+    $("formPhone").style.display = which === "phone" ? "block" : "none";
+    $("formDetails").style.display = which === "details" ? "block" : "none";
+    $("authTabs").style.display = ["name","phone","details"].includes(which) ? "none" : "flex";
     $("tabLogin").classList.toggle("active", which === "login");
     $("tabSignup").classList.toggle("active", which === "signup");
     if ($("gateWelcome")) $("gateWelcome").textContent = which === "login" ? "Welcome back" : "Create your wallet";
@@ -878,26 +913,52 @@
   const googleProvider = new GoogleAuthProvider();
   googleProvider.setCustomParameters({ prompt: "select_account" });
   async function googleSignIn(buttonId) {
-    const b = $(buttonId);
-    b.disabled = true;
-    showMsg("");
+    const b = $(buttonId); b.disabled = true; showMsg("");
     try {
-      await withTimeout(signInWithPopup(auth, googleProvider), 30000);
+      // Embedded Android WebViews commonly block popup OAuth; use redirect there.
+      const embedded = /;\s*wv\)|FreeWebToApk|WebView/i.test(navigator.userAgent);
+      if (embedded) await signInWithRedirect(auth, googleProvider);
+      else await withTimeout(signInWithPopup(auth, googleProvider), 30000);
     } catch (e) {
-      const code = e?.code || "";
-      if (["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(code)) {
-        showMsg("Google sign-in popup complete nahi hua. Browser mein pop-ups allow karke dobara try karein.");
-      } else if (code === "auth/operation-not-allowed") {
-        showMsg("Firebase Console → Authentication → Sign-in method mein Google provider enable karein.");
-      } else if (code === "auth/unauthorized-domain") {
-        showMsg("Is website ka domain Firebase Authentication ke Authorized domains mein add karein.");
-      } else {
-        showMsg(friendlyError(e));
-      }
+      if (e?.code === "auth/operation-not-allowed") showMsg("Firebase Console → Authentication → Sign-in method mein Google enable karein.");
+      else if (e?.code === "auth/unauthorized-domain") showMsg("Firebase Authentication → Authorized domains mein website ka domain add karein.");
+      else showMsg(friendlyError(e));
     } finally { b.disabled = false; }
   }
+  getRedirectResult(auth).catch(e => showMsg(friendlyError(e)));
   $("googleLoginBtn").addEventListener("click", () => googleSignIn("googleLoginBtn"));
   $("googleSignupBtn").addEventListener("click", () => googleSignIn("googleSignupBtn"));
+
+  // ---------- Phone OTP sign-in ----------
+  let phoneVerifier = null, phoneConfirmation = null;
+  function openPhoneAuth(){
+    showMsg(""); showAuthForm("phone");
+    if(!phoneVerifier){
+      phoneVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size:"normal", callback:()=>{} });
+      phoneVerifier.render().catch(e=>showMsg(friendlyError(e)));
+    }
+  }
+  $("phoneLoginOpen").onclick = openPhoneAuth;
+  $("phoneSignupOpen").onclick = openPhoneAuth;
+  $("phoneBackBtn").onclick = ()=>{ showAuthForm("login"); showMsg(""); };
+  $("sendPhoneOtpBtn").onclick = async ()=>{
+    const raw=$("phoneNumberInput").value.trim();
+    const phone=raw.startsWith("+")?raw:"+91"+raw.replace(/\D/g,"");
+    if(!/^\+[1-9]\d{7,14}$/.test(phone)) return showMsg("Country code ke saath valid mobile number daalein.");
+    try{
+      $("sendPhoneOtpBtn").disabled=true;
+      phoneConfirmation=await withTimeout(signInWithPhoneNumber(auth,phone,phoneVerifier),45000);
+      $("phoneOtpArea").style.display="block"; showMsg("OTP bhej diya gaya hai. SMS check karein.");
+    }catch(e){ showMsg(e?.code==="auth/operation-not-allowed"?"Firebase Console mein Phone sign-in enable karein.":friendlyError(e)); phoneVerifier?.clear(); phoneVerifier=null; }
+    finally{$("sendPhoneOtpBtn").disabled=false;}
+  };
+  $("verifyPhoneOtpBtn").onclick=async()=>{
+    const otp=$("phoneOtpInput").value.trim();
+    if(!/^\d{6}$/.test(otp))return showMsg("6 digit OTP daalein.");
+    try{ $("verifyPhoneOtpBtn").disabled=true; await withTimeout(phoneConfirmation.confirm(otp),45000); }
+    catch(e){showMsg(friendlyError(e));}
+    finally{$("verifyPhoneOtpBtn").disabled=false;}
+  };
 
   $("forgotBtn").addEventListener("click", async () => {
     const email = $("loginEmail").value.trim();
@@ -920,8 +981,8 @@
     for (let i = 0; i < 8; i++) {
       const antruId = randomAntruId();
       const batch = writeBatch(db);
-      batch.set(doc(db, "antruIds", antruId), { uid: u.uid, name });
-      batch.set(doc(db, "users", u.uid), { antruId, name, email: u.email, balance: 0, status: "active", createdAt: serverTimestamp() });
+      batch.set(doc(db, "antruIds", antruId), { uid: u.uid, name, nameLower: name.toLowerCase() });
+      batch.set(doc(db, "users", u.uid), { antruId, name, nameLower: name.toLowerCase(), email: u.email || "", phone: u.phoneNumber || "", balance: 0, status: "active", createdAt: serverTimestamp() });
       try { await withTimeout(batch.commit()); return; }
       catch (e) {
         if (e.code !== "permission-denied") throw e;
@@ -950,7 +1011,7 @@
       accountCreated = true;
       await createProfile(cred.user, name);
       creatingProfile = false;
-      await enterWallet();
+      await showDetailsForm(cred.user, (await getDoc(doc(db,"users",cred.user.uid))).data() || {});
     } catch (e) {
       creatingProfile = false;
       if (accountCreated && auth.currentUser) {
@@ -974,48 +1035,87 @@
     try {
       await createProfile(auth.currentUser, name);
       creatingProfile = false;
-      await enterWallet();
+      await showDetailsForm(auth.currentUser, (await getDoc(doc(db,"users",auth.currentUser.uid))).data() || {});
     } catch (e) { creatingProfile = false; showMsg(friendlyError(e)); }
     finally { setBusy("saveNameBtn", false, "Continue"); }
   });
   $("nameSignOutBtn").addEventListener("click", () => signOut(auth));
 
   // ---------- Session gate ----------
+  let authFlowSeq = 0;
   onAuthStateChanged(auth, async u => {
-    user = u;
-    unsubs.forEach(f => f()); unsubs = [];
-    if (!u) {
-      profile = null;
-      $("app").style.display = "none";
-      $("authGate").classList.remove("hide");
-      $("loginPassword").value = ""; $("signupPassword").value = "";
-      showAuthForm("login"); showMsg("");
-      closeDrawer();
-      return;
-    }
-    if (creatingProfile) return;
-    $("authGate").classList.remove("hide");
-    try {
-      const snap = await withTimeout(getDoc(doc(db, "users", u.uid)));
-      if (!snap.exists()) {
-        if (appSettings.signupsEnabled === false) {
-          showAuthForm("login");
-          showMsg("Naye wallet accounts abhi band hain. Admin se signups enable karwayein.");
-          await signOut(auth);
-          return;
-        }
-        $("nameEmail").textContent = "Logged in as: " + (u.email || "");
-        if (!$("userName").value.trim() && u.displayName) $("userName").value = u.displayName;
-        showAuthForm("name");
-        return;
+    const seq=++authFlowSeq; user=u;
+    unsubs.forEach(f=>f()); unsubs=[];
+    if(!u){ profile=null; $("app").style.display="none"; $("authGate").classList.remove("hide");
+      $("loginPassword").value=""; $("signupPassword").value=""; showAuthForm("login"); showMsg(""); closeDrawer(); return; }
+    if(creatingProfile) return;
+    $("authGate").classList.remove("hide"); $("app").style.display="none";
+    try{
+      const snap=await withTimeout(getDoc(doc(db,"users",u.uid)));
+      if(seq!==authFlowSeq)return;
+      if(!snap.exists()){
+        if(appSettings.signupsEnabled===false){showAuthForm("login");showMsg("Naye wallet accounts abhi band hain. Admin se signups enable karwayein.");await signOut(auth);return;}
+        if(u.displayName){ $("detailsName").value=u.displayName; }
+        await showDetailsForm(u,{}); return;
       }
-      profile = snap.data();
+      profile=snap.data();
+      await loadCustomFormSchema();
+      const missing=!profile.age || !profile.phone || !profile.state || !profile.city;
+      const customDue=!!(activeCustomSchema.published && activeCustomSchema.fields?.length && profile.customProfileFormVersion!==activeCustomSchema.updatedAt);
+      if(missing || customDue){ await showDetailsForm(u,profile); return; }
+      if(seq!==authFlowSeq)return;
       await enterWallet();
-    } catch (e) {
-      showAuthForm("login");
-      showMsg(friendlyError(e));
-    }
+    }catch(e){ if(seq===authFlowSeq){showAuthForm("login");showMsg(friendlyError(e));} }
   });
+
+  let activeCustomSchema={fields:[]};
+  async function loadCustomFormSchema(){
+    try{const s=await getDoc(doc(db,"appConfig","profileForm"));activeCustomSchema=s.exists()?s.data():{fields:[],published:false};}
+    catch(e){activeCustomSchema={fields:[],published:false};}
+  }
+  async function showDetailsForm(u, data={}){
+    await loadCustomFormSchema();
+    $("detailsFormTitle").textContent=activeCustomSchema.published?(activeCustomSchema.title||"Complete your profile"):"Complete your profile";
+    $("detailsFormDescription").textContent=activeCustomSchema.published?(activeCustomSchema.description||""):"Please complete the required details to continue.";
+    $("detailsAccount").textContent=u.email||u.phoneNumber||"Signed in";
+    $("detailsName").value=data.name||u.displayName||"";
+    $("detailsAge").value=data.age||"";
+    $("detailsPhone").value=data.phone||u.phoneNumber||"";
+    $("detailsState").value=data.state||""; $("detailsCity").value=data.city||"";
+    $("detailsGender").value=data.gender||"";
+    const wrap=$("customProfileFields"); wrap.innerHTML="";
+    if(activeCustomSchema.published && Array.isArray(activeCustomSchema.fields)){
+      const vals=data.customProfileFields||{};
+      activeCustomSchema.fields.forEach((f,i)=>{
+        const id="customField"+i, label=document.createElement("label"); label.htmlFor=id; label.textContent=(f.label||f.key)+(f.required?" *":"");
+        label.style.cssText="display:block;margin:13px 0 7px;color:var(--muted);font-size:12px";
+        let el;
+        if(f.type==="select") {el=document.createElement("select");el.className="field";(f.options||[]).forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;el.append(o);});}
+        else {el=document.createElement("input");el.className="field";el.type=["text","number","date"].includes(f.type)?f.type:"text";el.placeholder=f.placeholder||f.label||"";}
+        el.id=id;el.dataset.customKey=f.key;el.required=!!f.required;el.value=vals[f.key]||"";wrap.append(label,el);
+      });
+    }
+    showAuthForm("details"); showMsg("");
+  }
+  $("saveDetailsBtn").onclick=async()=>{
+    if(!user)return showMsg("Session expire ho gaya. Dobara login karein.");
+    const name=$("detailsName").value.trim(),age=Number($("detailsAge").value),phone=$("detailsPhone").value.trim(),state=$("detailsState").value.trim(),city=$("detailsCity").value.trim();
+    if(!name||!Number.isInteger(age)||age<13||age>100||!phone||!state||!city)return showMsg("Name, valid age, mobile number, state aur city bharna zaroori hai.");
+    const custom={};
+    for(const el of $("customProfileFields").querySelectorAll("[data-custom-key]")){if(el.required&&!el.value.trim())return showMsg("Required field: "+el.previousElementSibling?.textContent);custom[el.dataset.customKey]=el.value.trim();}
+    try{
+      $("saveDetailsBtn").disabled=true;
+      const ref=doc(db,"users",user.uid), snap=await getDoc(ref);
+      const update={name,nameLower:name.toLowerCase(),age,phone,state,city,gender:$("detailsGender").value,customProfileFields:custom,customProfileFormVersion:activeCustomSchema.published?activeCustomSchema.updatedAt:null,profileCompleted:true};
+      if(snap.exists()) await updateDoc(ref,update);
+      else await createProfile(user,name).then(()=>updateDoc(ref,update));
+      const fresh=await getDoc(ref);profile=fresh.data();
+      // Keep the directory name current for exact-ID and name search.
+      if(profile.antruId) await updateDoc(doc(db,"antruIds",profile.antruId),{name,nameLower:name.toLowerCase()}).catch(()=>{});
+      await enterWallet();
+    }catch(e){showMsg(friendlyError(e));}
+    finally{$("saveDetailsBtn").disabled=false;}
+  };
 
   // ---------- Wallet ----------
   let user = null, profile = null, unsubs = [];
@@ -1041,6 +1141,15 @@
       $("topAvatar").textContent = initials(profile.name);
       renderBanner();
     }, () => {}));
+
+    // Admin-published forms appear live without requiring users to sign out.
+    unsubs.push(onSnapshot(doc(db,"appConfig","profileForm"), async snap=>{
+      if(!snap.exists()) return;
+      activeCustomSchema=snap.data();
+      if(activeCustomSchema.published && Array.isArray(activeCustomSchema.fields) && activeCustomSchema.fields.length && profile?.customProfileFormVersion!==activeCustomSchema.updatedAt){
+        await showDetailsForm(user,profile||{});
+      }
+    },()=>{}));
 
     unsubs.push(onSnapshot(query(collection(db, "transactions"), where("uid", "==", user.uid)), s => {
       txs = s.docs.map(d => d.data()).sort(newestFirst);
@@ -1493,8 +1602,9 @@
     const name = $("pName").value.trim();
     if (!name) return toast("Naam khali nahi ho sakta.", "err");
     try {
-      await withTimeout(updateDoc(doc(db, "users", user.uid), { name }));
-      toast("Naam save ho gaya.");
+      await withTimeout(updateDoc(doc(db, "users", user.uid), { name, nameLower:name.toLowerCase() }));
+      if(profile?.antruId) await withTimeout(updateDoc(doc(db,"antruIds",profile.antruId),{name,nameLower:name.toLowerCase()}));
+      toast("Naam save ho gaya. Search mein updated naam dikhega.");
     } catch (e) { toast(friendlyError(e), "err"); }
   });
 
@@ -1515,8 +1625,7 @@
     } finally { $("changePassBtn").disabled = false; }
   });
 
-  // ---------- Keep my name in sync for the transfer receipt ----------
-  // (name changes are saved on users/{uid}; antruIds keeps the name used at signup)
+  // ---------- Keep directory name in sync ----------
 
   // ---------- Home layout behaviour ----------
   $("checkBalBtn").onclick = () => {
@@ -1564,7 +1673,9 @@
         const s = await withTimeout(getDoc(doc(db, "antruIds", q.toUpperCase())));
         if (s.exists()) results = [{ id: q.toUpperCase(), name: s.data().name }];
       } else {
-        const s = await withTimeout(getDocs(query(collection(db, "antruIds"), where("name", ">=", q), where("name", "<=", q + "\uf8ff"), limit(8))));
+        let s;
+        try { s = await withTimeout(getDocs(query(collection(db, "antruIds"), where("nameLower", ">=", q.toLowerCase()), where("nameLower", "<=", q.toLowerCase() + "\uf8ff"), limit(8)))); }
+        catch { s = await withTimeout(getDocs(query(collection(db, "antruIds"), where("name", ">=", q), where("name", "<=", q + "\uf8ff"), limit(8)))); }
         results = s.docs.map(d => ({ id: d.id, name: d.data().name }));
       }
     } catch (e) {
@@ -1584,14 +1695,16 @@
     openSendTo(b.dataset.id);
   });
 
-  // Recommended = people you recently paid (read from your "Sent to ANTRUxxx" transactions)
+  // Recommended = recent transfer counterparties (use stable ID fields, not old title text).
   let recSeq = 0;
   async function refreshRecommended() {
     const seq = ++recSeq;
     const ids = [];
     for (const t of txs) {
-      const m = /^Sent to (ANTRU\d+)$/i.exec(t.title || "");
-      if (m && !ids.includes(m[1].toUpperCase())) ids.push(m[1].toUpperCase());
+      const titleMatch=/\((ANTRU\d{6})\)/i.exec(t.title||"");
+      const oldMatch=/Sent to (ANTRU\d{6})/i.exec(t.title||"");
+      const id=String(t.counterpartyAntruId||t.receiverAntruId||(titleMatch&&titleMatch[1])||(oldMatch&&oldMatch[1])||"").toUpperCase();
+      if(/^ANTRU\d{6}$/.test(id) && !ids.includes(id)) ids.push(id);
       if (ids.length >= 8) break;
     }
     if (!ids.length) {
@@ -1603,11 +1716,11 @@
       catch (e) { return null; }
     }))).filter(Boolean);
     if (seq !== recSeq) return;
-    $("recList").innerHTML = items.map(r => `
+    $("recList").innerHTML = items.length ? items.map(r => `
       <button class="rec" data-id="${esc(r.id)}">
         <span class="circle">${esc(initials(r.name))}</span>
         <span class="nm">${esc(r.name.split(" ")[0])}</span>
-      </button>`).join("");
+      </button>`).join("") : '<div class="empty" style="padding:14px">Abhi recent payments nahi hain. Kisi ko pay karne ke baad yahan dikhega.</div>';
   }
   $("recList").addEventListener("click", e => {
     const b = e.target.closest("[data-id]"); if (b) openSendTo(b.dataset.id);
